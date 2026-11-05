@@ -1,0 +1,35 @@
+# Publie une version : il suffit de pousser une étiquette, par exemple v1.7.
+# GitHub compile alors le programme et le met en téléchargement (AgendaGoogleAccessible.zip).
+name: Publier une version
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  publier:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Installer Mono
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq mono-mcs mono-devel
+      - name: Compiler
+        run: sh source/build.sh
+      - name: Préparer le zip
+        run: |
+          mkdir -p paquet/AgendaGoogleAccessible
+          cp source/out/AgendaGoogleAccessible.exe source/out/AgendaGoogleAccessible.exe.config LISEZMOI.txt paquet/AgendaGoogleAccessible/
+          cd paquet && zip -qr ../AgendaGoogleAccessible.zip AgendaGoogleAccessible
+      - name: Publier
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          NOTES="notes/${GITHUB_REF_NAME}.md"
+          if [ -f "$NOTES" ]; then
+            gh release create "$GITHUB_REF_NAME" AgendaGoogleAccessible.zip --title "Agenda Google accessible ${GITHUB_REF_NAME#v}" --notes-file "$NOTES"
+          else
+            gh release create "$GITHUB_REF_NAME" AgendaGoogleAccessible.zip --title "Agenda Google accessible ${GITHUB_REF_NAME#v}" --generate-notes
+          fi
