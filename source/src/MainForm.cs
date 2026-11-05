@@ -486,7 +486,7 @@ namespace AgendaAccessible
                 Item("&Aide générale", Keys.F1, null, () => ShowText("Aide", HelpText.General)),
                 Item("&Touches de raccourci", Keys.Control | Keys.F1, null, () => ShowText("Touches de raccourci", HelpText.Shortcuts)),
                 new ToolStripSeparator(),
-                Item("À &propos", Keys.None, null, () => Ui.Info(this, "Agenda Google accessible, version 1.6\r\nPar François Burlet (Exatropic).\r\n\r\nGestion de vos agendas Google au clavier, avec NVDA ou JAWS."))));
+                Item("À &propos", Keys.None, null, () => Ui.Info(this, "Agenda Google accessible, version 1.6.1\r\nPar Luc Rasschaert (Exatropic).\r\n\r\nGestion de vos agendas Google au clavier, avec NVDA ou JAWS."))));
             return ms;
         }
 

@@ -459,8 +459,8 @@ Le guide complet, avec la préparation de l'accès Google, est dans le fichier L
 
         /// <summary>Guide court fourni avec une version distribuée (sans les étapes Google Cloud).</summary>
         public const string UserGuide =
-@"AGENDA GOOGLE ACCESSIBLE - Version 1.6
-Par François Burlet (Exatropic)
+@"AGENDA GOOGLE ACCESSIBLE - Version 1.6.1
+Par Luc Rasschaert (Exatropic)
 
 Gérez votre agenda Google au clavier, avec NVDA ou JAWS : rendez-vous, alarmes,
 résumé du matin, agendas partagés.

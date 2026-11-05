@@ -7,10 +7,10 @@ using System.Windows.Forms;
 [assembly: AssemblyDescription("Gestion accessible (NVDA, JAWS) d'un agenda Google : événements, partage, agendas partagés.")]
 [assembly: AssemblyCompany("Exatropic")]
 [assembly: AssemblyProduct("Agenda Google accessible")]
-[assembly: AssemblyCopyright("François Burlet")]
-[assembly: AssemblyVersion("1.6.0.0")]
+[assembly: AssemblyCopyright("Luc Rasschaert")]
+[assembly: AssemblyVersion("1.6.1.0")]
 [assembly: System.Runtime.Versioning.TargetFramework(".NETFramework,Version=v4.6.2", FrameworkDisplayName = ".NET Framework 4.6.2")]
-[assembly: AssemblyFileVersion("1.6.0.0")]
+[assembly: AssemblyFileVersion("1.6.1.0")]
 
 namespace AgendaAccessible
 {

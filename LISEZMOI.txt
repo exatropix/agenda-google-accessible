@@ -1,5 +1,5 @@
-﻿AGENDA GOOGLE ACCESSIBLE - Version 1.6
-Par François Burlet (Exatropic)
+﻿AGENDA GOOGLE ACCESSIBLE - Version 1.6.1
+Par Luc Rasschaert (Exatropic)
 
 Application Windows pour gérer votre agenda Google au clavier, avec NVDA ou JAWS :
 - consulter vos rendez-vous sur une période (un jour, une semaine, un mois…) ;
