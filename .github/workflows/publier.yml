@@ -1,10 +1,14 @@
-# Publie une version : il suffit de pousser une étiquette, par exemple v1.7.
-# GitHub compile alors le programme et le met en téléchargement (AgendaGoogleAccessible.zip).
+# Publie une version : onglet Actions, « Publier une version », « Run workflow », puis le numéro (par exemple 1.7).
+# GitHub compile le programme et le met en téléchargement (AgendaGoogleAccessible.zip).
+# Les notes de version viennent du fichier notes/vNUMÉRO.md s'il existe.
 name: Publier une version
 
 on:
-  push:
-    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Numéro de version, par exemple 1.7"
+        required: true
 
 permissions:
   contents: write
@@ -27,9 +31,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          NOTES="notes/${GITHUB_REF_NAME}.md"
+          V="${{ inputs.version }}"
+          NOTES="notes/v$V.md"
           if [ -f "$NOTES" ]; then
-            gh release create "$GITHUB_REF_NAME" AgendaGoogleAccessible.zip --title "Agenda Google accessible ${GITHUB_REF_NAME#v}" --notes-file "$NOTES"
+            gh release create "v$V" AgendaGoogleAccessible.zip --target "$GITHUB_SHA" --title "Agenda Google accessible $V" --notes-file "$NOTES"
           else
-            gh release create "$GITHUB_REF_NAME" AgendaGoogleAccessible.zip --title "Agenda Google accessible ${GITHUB_REF_NAME#v}" --generate-notes
+            gh release create "v$V" AgendaGoogleAccessible.zip --target "$GITHUB_SHA" --title "Agenda Google accessible $V" --generate-notes
           fi
