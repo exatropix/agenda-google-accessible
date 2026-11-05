@@ -1,7 +1,5 @@
 # Agenda Google accessible
 
-![Téléchargements](https://img.shields.io/github/downloads/exatropix/agenda-google-accessible/total?label=T%C3%A9l%C3%A9chargements)
-
 **Votre agenda Google entièrement au clavier, accessible avec NVDA et JAWS. Pour Windows 10 et 11. En français.**
 
 Par Exatropic.
@@ -20,7 +18,7 @@ Par Exatropic.
 
 ## Télécharger
 
-[AgendaGoogleAccessible.zip](https://github.com/exatropix/agenda-google-accessible/releases/latest/download/AgendaGoogleAccessible.zip)
+[AgendaGoogleAccessible.zip](https://github.com/exatropix/agenda-google-accessible/raw/main/telechargement/AgendaGoogleAccessible.zip)
 
 Décompressez-le dans un dossier, puis lancez AgendaGoogleAccessible.exe. Si Windows affiche « Windows a protégé votre ordinateur », choisissez « Informations complémentaires », puis « Exécuter quand même » : le programme n'est pas signé.
 
@@ -52,4 +50,4 @@ Domaine public (Unlicense) : utilisez, copiez, modifiez et redistribuez libremen
 
 ## English
 
-**Accessible Google Calendar** is a free Windows app for managing Google Calendar entirely from the keyboard with NVDA or JAWS: day and event lists, all calendars at once or one at a time, recurring events, audible reminders with a screen-reader friendly alert window, a morning summary, calendar sharing and search. The interface is in French. It talks directly to Google with no intermediate server. [Download](https://github.com/exatropix/agenda-google-accessible/releases/latest/download/AgendaGoogleAccessible.zip) · [Privacy policy](https://exatropix.github.io/agenda-google-accessible/confidentialite.html) · Public domain (Unlicense).
+**Accessible Google Calendar** is a free Windows app for managing Google Calendar entirely from the keyboard with NVDA or JAWS: day and event lists, all calendars at once or one at a time, recurring events, audible reminders with a screen-reader friendly alert window, a morning summary, calendar sharing and search. The interface is in French. It talks directly to Google with no intermediate server. [Download](https://github.com/exatropix/agenda-google-accessible/raw/main/telechargement/AgendaGoogleAccessible.zip) · [Privacy policy](https://exatropix.github.io/agenda-google-accessible/confidentialite.html) · Public domain (Unlicense).
