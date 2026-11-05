@@ -1,0 +1,277 @@
+﻿AGENDA GOOGLE ACCESSIBLE - Version 1.6
+Par François Burlet (Exatropic)
+
+Application Windows pour gérer votre agenda Google au clavier, avec NVDA ou JAWS :
+- consulter vos rendez-vous sur une période (un jour, une semaine, un mois…) ;
+- ajouter, modifier, supprimer un rendez-vous, avec lieu, description et invités ;
+- partager un agenda avec une personne (voir seulement disponibilités, voir les détails, modifier, ou gérer le partage) ;
+- voir qui a accès à un agenda et retirer un accès ;
+- ajouter à votre liste un agenda qu'une autre personne vous a partagé ;
+- créer un nouvel agenda (par exemple un agenda familial à partager).
+
+
+1. INSTALLATION
+
+Il n'y a rien à installer. Décompressez le dossier où vous voulez (par exemple dans Documents),
+puis lancez AgendaGoogleAccessible.exe.
+L'application utilise le .NET Framework déjà présent dans Windows 10 et Windows 11.
+
+Au premier lancement, Windows peut afficher « Windows a protégé votre ordinateur »
+(le programme n'est pas signé numériquement). Activez « Informations complémentaires »,
+puis le bouton « Exécuter quand même ».
+
+
+2. PRÉPARER L'ACCÈS GOOGLE (à faire une seule fois, environ 10 minutes)
+
+Google demande que chaque application qui touche à un agenda ait son propre « identifiant client ».
+Vous le créez gratuitement dans la console Google Cloud, avec votre compte Google.
+Les intitulés peuvent être en anglais ou en français selon la langue de la console :
+les deux sont indiqués.
+
+Étape A - Créer un projet
+  1. Ouvrez https://console.cloud.google.com et connectez-vous avec votre compte Google.
+  2. Acceptez les conditions si c'est votre première visite.
+  3. Créez un nouveau projet (sélecteur de projet en haut de page, puis « Nouveau projet » / « New project »).
+     Nom conseillé : Agenda accessible. Validez avec « Créer » / « Create ».
+  4. Vérifiez que ce projet est bien sélectionné.
+
+Étape B - Activer l'API Google Agenda
+  1. Ouvrez https://console.cloud.google.com/apis/library/calendar-json.googleapis.com
+  2. Activez le bouton « Activer » / « Enable ».
+
+Étape C - Écran de consentement (Google Auth Platform)
+  1. Ouvrez https://console.cloud.google.com/auth/overview
+  2. Si la page indique que la plateforme n'est pas configurée, activez « Commencer » / « Get started ».
+  3. Nom de l'application : Agenda accessible. Adresse e-mail d'assistance : votre adresse Gmail. Suivant.
+  4. Audience : choisissez « Externe » / « External ». Suivant.
+  5. Coordonnées : votre adresse Gmail. Suivant.
+  6. Cochez l'acceptation du règlement sur les données utilisateur, puis « Continuer » et « Créer ».
+  7. Dans la rubrique « Audience », utilisez le bouton « Publier l'application » / « Publish app »
+     et confirmez. C'est important : en mode « Test », Google vous déconnecte tous les 7 jours.
+     (Si vous préférez rester en mode Test, ajoutez au moins votre adresse Gmail dans « Utilisateurs test » / « Test users ».)
+
+Étape D - Créer l'identifiant client et télécharger le fichier
+  1. Ouvrez https://console.cloud.google.com/auth/clients
+  2. Activez « Créer un client » / « Create client ».
+  3. Type d'application : « Application de bureau » / « Desktop app ». Nom : Agenda accessible.
+  4. Activez « Créer » / « Create ».
+  5. Dans la fenêtre qui confirme la création, utilisez « Télécharger le fichier JSON » / « Download JSON ».
+     (Sinon, dans la liste des clients, ouvrez le client créé et cherchez le bouton de téléchargement.)
+  6. Le fichier téléchargé s'appelle client_secret_ suivi d'une longue suite de caractères, .json.
+
+Si le téléchargement du fichier JSON ne fonctionne pas (Google ne montre le code secret qu'au moment de sa création) :
+  ouvrez le client « Agenda accessible » dans la liste des clients, utilisez « Ajouter un code secret »,
+  et copiez le code secret qui s'affiche (il commence en général par GOCSPX). Copiez aussi l'ID client
+  (il se termine par .apps.googleusercontent.com). Au premier lancement, l'application vous propose
+  de coller ces deux valeurs (réponse « Non » à la question de bienvenue) : aucun fichier n'est alors nécessaire.
+
+Deux façons de donner le fichier JSON à l'application :
+  - soit vous le placez dans le même dossier que AgendaGoogleAccessible.exe (il est trouvé automatiquement) ;
+  - soit vous lancez l'application : elle vous demande de le choisir dans une fenêtre d'ouverture de fichier,
+    puis elle en garde une copie.
+
+Ce fichier est personnel : ne le publiez pas et ne l'envoyez à personne.
+
+
+3. PREMIER LANCEMENT ET CONNEXION
+
+1. Lancez AgendaGoogleAccessible.exe.
+2. Si nécessaire, choisissez le fichier JSON de l'étape D.
+3. Un message annonce l'ouverture du navigateur. Validez : la page de connexion Google s'ouvre.
+4. Choisissez votre compte Google.
+5. Google affiche « Google n'a pas validé cette application » : c'est normal, c'est votre propre application.
+   Activez le lien « Paramètres avancés » / « Advanced », puis « Accéder à Agenda accessible (non sécurisé) ».
+6. Autorisez l'accès à l'agenda (bouton « Continuer » / « Autoriser »).
+7. La page affiche « Connexion réussie ». Fermez l'onglet (Ctrl+W) et revenez à l'application (Alt+Tab).
+   Vos agendas et les rendez-vous des 7 prochains jours se chargent.
+
+Les fois suivantes, l'application se connecte toute seule.
+
+
+4. LA FENÊTRE PRINCIPALE
+
+Elle a deux listes, et une barre de menus (touche Alt). Passez d'une liste à l'autre avec F6.
+Le nom de l'agenda affiché est dans le titre de la fenêtre.
+
+La liste des jours (au démarrage) :
+  Un jour par ligne, par exemple « Aujourd'hui, mardi 3 novembre, 2 rendez-vous ».
+  Un petit signal sonore annonce les jours qui ont au moins un rendez-vous
+  (menu Affichage pour le couper ou le remettre).
+  Flèches : jour précédent ou suivant ; au bout du mois, la liste passe au mois voisin.
+  Entrée : aller aux rendez-vous du jour.
+
+La liste des rendez-vous du jour :
+  Un rendez-vous par ligne, par exemple « De 10h00 à 11h30 : Dentiste, lieu : Rennes ».
+  Entrée : le détail complet s'ouvre dans une fenêtre de texte, à lire avec les flèches.
+  Dans cette fenêtre : Ctrl+M modifier, Ctrl+S supprimer, Échap fermer.
+  Échap ou F6 : revenir à la liste des jours.
+
+La ligne d'état, en bas, se lit avec NVDA+Fin (JAWS : Insert+Page suivante).
+
+
+5. LES MENUS ET LES RACCOURCIS
+
+Fichier (Alt+F) : se connecter ou se déconnecter du compte Google ; Actualiser (F5) ; Quitter.
+Édition (Alt+D) : Rechercher dans cet agenda (Ctrl+F) ; Rechercher dans tous les agendas (Ctrl+Maj+F).
+Rendez-vous (Alt+R) : Nouveau (Ctrl+N) ; Voir le détail (Entrée) ; Modifier (Ctrl+M) ;
+  Supprimer (Suppr ou Ctrl+S).
+Affichage (Alt+A) : Aujourd'hui (Ctrl+Origine) ; Aller à une date (Ctrl+D) ;
+  Mois suivant (Ctrl+Page suivante) ; Mois précédent (Ctrl+Page précédente) ;
+  Passer des jours aux rendez-vous (F6) ; Signal sonore.
+Agenda (Alt+G) : Choisir l'agenda (Ctrl+G) ; Partager cet agenda ;
+  S'abonner à un agenda partagé avec moi ; Créer un agenda ; Copier l'identifiant ;
+  Retirer cet agenda de ma liste.
+Aide (Alt+E) : Aide générale (F1) ; Touches de raccourci (Ctrl+F1) ; À propos.
+
+Depuis la liste des jours, Ctrl+M ou Suppr agit sur le rendez-vous du jour ;
+s'il y en a plusieurs, l'application vous demande lequel.
+Ctrl+N crée le rendez-vous à la date du jour choisi.
+Pour un rendez-vous qui se répète, seule l'occurrence choisie est modifiée ou supprimée.
+
+Recherche : elle porte sur le titre, le lieu et la description, de l'année passée
+aux deux années à venir. Dans les résultats : Entrée pour le détail,
+Alt+A (« Aller à ce jour ») pour afficher ce jour dans la fenêtre principale.
+
+
+6. FICHE DE SAISIE D'UN RENDEZ-VOUS
+
+Champs : Titre (Alt+T), Toute la journée (Alt+J), Date de début (Alt+D), Heure de début (Alt+B),
+Date de fin (Alt+F), Heure de fin (Alt+I), Lieu (Alt+L), Description (Alt+E), Invités (Alt+V).
+- Dates : 25/12/2026, 25/12, « demain »…  Heures : 14:30, 14h30, 14h.
+- Si vous changez la date de début, la date de fin suit automatiquement si besoin.
+- Invités : adresses e-mail séparées par des virgules. Google leur envoie une invitation.
+- Entrée (dans n'importe quel champ sauf la description) ou Alt+G (bouton Enregistrer) : enregistre.
+  Échap : annule. Dans la description, Entrée passe à la ligne.
+
+
+7. PARTAGER UN AGENDA AVEC QUELQU'UN
+
+1. Choisissez l'agenda (Ctrl+G). Vous devez en être propriétaire.
+2. Menu Agenda, « Partager cet agenda ».
+3. La fenêtre liste les personnes qui ont déjà accès (Suppr ou Alt+R pour retirer un accès).
+4. Tapez l'adresse e-mail de la personne (Alt+A), de préférence son adresse Gmail.
+5. Choisissez le droit (Alt+D) :
+   - Voir tous les détails des événements ;
+   - Voir seulement si je suis libre ou occupé ;
+   - Modifier les événements ;
+   - Modifier les événements et gérer le partage (confiance totale).
+6. Bouton « Partager avec cette personne » (Alt+V), ou Entrée dans le champ adresse.
+Google envoie un e-mail à la personne pour qu'elle ajoute l'agenda.
+
+Conseil : pour partager seulement une partie de votre vie (famille, association…),
+créez un agenda à part (menu Agenda, « Créer un agenda »), puis partagez celui-là.
+
+« Copier l'identifiant de l'agenda » met son identifiant dans le presse-papiers :
+utile à donner à la personne, surtout pour un agenda créé à part.
+
+
+8. S'ABONNER À UN AGENDA QU'ON VOUS A PARTAGÉ
+
+1. Menu Agenda, « S'abonner à un agenda partagé avec moi ».
+2. Tapez l'adresse Gmail de la personne (pour son agenda principal),
+   ou l'identifiant qu'elle vous a donné (il finit souvent par @group.calendar.google.com).
+3. Validez : l'agenda apparaît dans le choix des agendas (Ctrl+G), avec votre droit.
+Si l'ajout échoue, c'est que la personne ne vous l'a pas encore partagé : demandez-lui de le faire d'abord.
+
+Pour retirer un agenda de votre liste : menu Agenda, « Retirer cet agenda de ma liste ».
+Pour un agenda dont vous êtes propriétaire, l'application vous demande si vous voulez
+seulement le retirer de la liste ou le supprimer définitivement.
+
+
+8 bis. ALARMES, RÉSUMÉ DU MATIN ET TOUS MES AGENDAS (nouveau en version 1.3)
+
+Tous mes agendas
+- Par défaut, la liste des jours et celle des rendez-vous regroupent tous vos agendas :
+  le vôtre, ceux que vous avez créés et ceux qu'on vous a partagés.
+  Chaque rendez-vous qui ne vient pas de votre agenda principal indique son agenda.
+- Ctrl+G : choisir « Tous mes agendas » (en tête de liste) ou un seul agenda.
+- En vue « Tous mes agendas », un nouveau rendez-vous demande où le ranger (Alt+R).
+  L'application retient votre dernier choix.
+- Partager, copier l'identifiant et retirer un agenda demandent d'abord de choisir cet agenda avec Ctrl+G.
+
+Alarmes d'un rendez-vous (fiche de saisie)
+- « Alarmes par défaut de l'agenda » (Alt+A), cochée : le rendez-vous suit le réglage par défaut.
+- Décochée, vous choisissez : 1 heure avant (Alt+H), 30 minutes avant (Alt+M),
+  15 minutes avant (Alt+N), à l'heure exacte (Alt+X). Plusieurs choix possibles.
+- Les alarmes sont enregistrées dans Google : votre iPhone vous prévient aussi.
+- Les rendez-vous « toute la journée » n'ont pas d'alarme : ils figurent dans le résumé du matin.
+- Le détail d'un rendez-vous (Entrée) indique ses alarmes.
+
+Alarmes par défaut (menu Alarmes, Alt+L)
+- « Alarmes par défaut de mes agendas » : cochez les délais, puis les agendas concernés
+  (Espace dans la liste pour cocher ou décocher). Ce réglage est aussi enregistré dans Google.
+
+Rendez-vous qui se répètent (nouveau en version 1.5)
+- Dans la fiche d'un nouveau rendez-vous, « Répétition » (Alt+P) : ne se répète pas,
+  tous les jours, du lundi au vendredi, toutes les semaines, toutes les 2 semaines,
+  tous les mois, tous les ans, ou « Anniversaire » (tous les ans, toute la journée).
+- « Fin de la répétition » (Alt+O) : une date, ou vide pour une répétition sans fin.
+- Modifier un rendez-vous répété ne change que cette date.
+- Supprimer un rendez-vous répété demande : cette date seulement (Oui) ou toute la série (Non).
+- Le détail d'un rendez-vous (Entrée) indique s'il fait partie d'une série.
+
+Le résumé du matin et la fenêtre d'alarme se ferment avec Échap ou Entrée.
+
+Quand une alarme sonne
+- Une sonnerie retentit et une fenêtre passe au premier plan, par exemple :
+  « Dans 30 minutes, à 14h30 : Dentiste. Lieu : Rennes ».
+- Échap : arrêter. Alt+5 : rappeler dans 5 minutes. Alt+O : ouvrir l'agenda sur ce rendez-vous.
+- La sonnerie s'arrête seule au bout de 2 minutes.
+- Si l'ordinateur était éteint ou en veille à l'heure d'une alarme, elle sonne dès qu'il se rallume,
+  tant que le rendez-vous n'a pas commencé.
+
+Résumé du matin
+- Chaque jour, au premier démarrage (à partir de 5 h), une fenêtre annonce les rendez-vous
+  du jour, les alarmes prévues et le nombre de rendez-vous du lendemain.
+- Ctrl+R : relire le résumé à tout moment. Ctrl+L : liste des prochaines alarmes.
+
+L'agenda reste actif
+- Pour sonner, l'application doit tourner. Elle démarre donc avec Windows, discrètement,
+  et se place dans la zone de notification (près de l'horloge, Windows+B pour y aller).
+- Alt+F4 ferme la fenêtre, mais les alarmes restent actives.
+- Ctrl+Alt+A, depuis n'importe quelle application : rouvrir l'agenda.
+- Menu Fichier, « Quitter complètement » (Ctrl+Q) : arrêter l'application. Plus aucune alarme.
+- Menu Alarmes : vous pouvez couper les alarmes, le résumé du matin ou le démarrage avec Windows,
+  et tester la sonnerie.
+
+
+8 ter. DONNER L'AGENDA À D'AUTRES PERSONNES (nouveau en version 1.4)
+
+Les personnes à qui vous donnez l'agenda n'ont pas à passer par Google Cloud :
+elles utilisent vos identifiants, et se connectent simplement avec leur compte Google.
+
+1. Une seule fois : passez votre projet Google Cloud en production (voir VERIFICATION-GOOGLE.txt, étape 1).
+2. Menu Fichier, « Préparer une version à distribuer ». Répondez Oui pour utiliser
+   votre fichier d'identifiants actuel, puis choisissez où enregistrer le zip.
+3. Donnez ce zip. Il contient le programme, le fichier agenda-identifiants.json et un guide simple.
+
+Tant que Google n'a pas vérifié l'application, les utilisateurs voient l'avertissement
+« Google n'a pas validé cette application », et le projet est limité à 100 utilisateurs au total.
+La marche à suivre pour la vérification est dans VERIFICATION-GOOGLE.txt.
+
+Menu Fichier, « Utiliser mes propres identifiants Google » : pour une personne qui préfère
+son propre projet Google Cloud. « Revenir aux identifiants fournis avec l'application » annule ce choix.
+Ne publiez jamais agenda-identifiants.json ni credentials.json dans le code source sur GitHub.
+
+
+9. CONFIDENTIALITÉ
+
+- L'application parle directement à Google, sans aucun serveur intermédiaire.
+- Le jeton de connexion est enregistré chiffré (protection Windows, lisible seulement par votre session) dans :
+  %APPDATA%\AgendaGoogleAccessible
+- Menu Fichier, « Se déconnecter du compte Google » efface ce jeton.
+- Vous pouvez aussi retirer l'accès à tout moment depuis https://myaccount.google.com/permissions
+
+
+10. PROBLÈMES FRÉQUENTS
+
+- « L'API Google Agenda n'est pas activée » : refaites l'étape B dans le bon projet, attendez une minute, F5.
+- « Accès bloqué » ou « access_denied » à la connexion : l'application est en mode Test et votre adresse
+  n'est pas dans les utilisateurs test, ou l'étape C n'est pas terminée. Publiez l'application (étape C.7).
+- Il faut se reconnecter chaque semaine : l'application est restée en mode Test (étape C.7).
+- Le navigateur ne s'ouvre pas : vérifiez qu'un navigateur par défaut est défini dans Windows.
+- Rien ne se passe après la connexion : revenez à la fenêtre de l'application avec Alt+Tab.
+- Une alarme ne sonne pas : vérifiez que l'application tourne (Ctrl+Alt+A), que le menu Alarmes,
+  « Activer les alarmes » est coché, et que le rendez-vous a bien une alarme (Entrée pour le détail).
+  L'application relit vos agendas toutes les 10 minutes : un rendez-vous ajouté depuis le téléphone
+  est pris en compte au plus tard 10 minutes après (F5 pour forcer).

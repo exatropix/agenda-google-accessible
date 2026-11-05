@@ -1,0 +1,106 @@
+AGENDA GOOGLE ACCESSIBLE - PASSER EN PRODUCTION ET DEMANDER LA VÉRIFICATION GOOGLE
+
+Tout se fait dans la console Google Cloud (https://console.cloud.google.com),
+dans le projet que vous utilisez déjà, rubrique « Google Auth Platform ».
+
+
+ÉTAPE 1. PASSER EN PRODUCTION (2 minutes, à faire tout de suite)
+
+1. Rubrique « Audience ».
+2. Bouton « Publier l'application » (« Publish app »), puis confirmez.
+Effet : n'importe quel compte Google peut se connecter, avec l'avertissement
+« Google n'a pas validé cette application », dans la limite de 100 utilisateurs
+au total pour le projet. Les connexions n'expirent plus chaque semaine.
+Vous pouvez distribuer dès maintenant à un petit cercle.
+
+
+ÉTAPE 2. LES DEUX PAGES SONT DÉJÀ EN LIGNE
+
+Elles sont publiées par GitHub Pages, depuis le dossier docs du dépôt :
+- Page d'accueil : https://exatropix.github.io/agenda-google-accessible/
+- Confidentialité : https://exatropix.github.io/agenda-google-accessible/confidentialite.html
+Le contact renvoie à la page des questions du projet sur GitHub (pas d'adresse e-mail publique).
+
+Prouvez que ce site vous appartient avec la Google Search Console
+(https://search.google.com/search-console), avec le même compte Google que la console Cloud :
+ajoutez une propriété « Préfixe de l'URL » avec l'adresse de la page d'accueil, choisissez
+la méthode « Fichier HTML », et envoyez-moi le fichier que Google vous donne : je le déposerai
+dans le dossier docs. Si Google exige de vérifier tout exatropix.github.io, je créerai le petit
+dépôt exatropix.github.io qui le permet.
+
+
+ÉTAPE 3. REMPLIR LA FICHE DE L'APPLICATION
+
+Rubrique « Branding » (Image de marque) :
+- Nom de l'application : Agenda accessible
+- Adresse d'assistance : votre adresse publique
+- Page d'accueil : l'adresse de index.html
+- Règles de confidentialité : l'adresse de confidentialite.html
+- Domaines autorisés : exatropix.github.io
+- Logo : facultatif. S'il y en a un, Google le vérifie aussi, ce qui allonge un peu le délai.
+
+Rubrique « Data Access » (Accès aux données) :
+- Vérifiez qu'il y a exactement une autorisation : https://www.googleapis.com/auth/calendar
+  C'est celle que l'application demande.
+
+
+ÉTAPE 4. LA VIDÉO DE DÉMONSTRATION
+
+Google demande une courte vidéo (2 à 4 minutes), mise en ligne sur YouTube en « non répertoriée ».
+Elle doit montrer :
+1. Le lancement de l'application et la page de connexion Google, en anglais de préférence
+   (le plus simple : régler votre compte Google en anglais le temps de l'enregistrement),
+   avec la barre d'adresse visible : elle doit montrer l'identifiant client (client_id=...).
+2. L'écran d'autorisation qui demande l'accès à l'agenda.
+3. L'utilisation de chaque fonction qui a besoin de cet accès :
+   affichage des rendez-vous, création, modification, suppression, alarmes,
+   partage d'un agenda, abonnement à un agenda partagé.
+Un enregistrement d'écran avec la barre de jeu de Windows (Windows+Alt+R) suffit.
+Une narration à voix haute (en anglais si possible) aide le relecteur.
+
+
+ÉTAPE 5. LA JUSTIFICATION (à coller dans le formulaire, en anglais)
+
+Texte à coller :
+
+Agenda Google accessible is a free Windows desktop app that lets blind and visually impaired
+people manage their Google Calendar entirely with the keyboard and a screen reader (NVDA, JAWS).
+The web interface of Google Calendar is hard to use with a screen reader; this app presents
+days and events as simple lists that screen readers read reliably.
+We request the https://www.googleapis.com/auth/calendar scope because the app needs to:
+list the user's calendars, including calendars shared with them; read, create, edit and delete
+events on any of them; set event reminders and the calendars' default reminders, which the app
+uses to ring audible alarms; share a calendar with another person and manage its sharing rules
+(ACL); subscribe to a calendar shared with the user and remove it from the list; create a new
+secondary calendar. Narrower scopes such as calendar.events do not cover sharing (ACL),
+calendar list management and calendar creation, which are core features.
+The app runs entirely on the user's computer and talks directly to the Google Calendar API.
+There is no server: no user data is ever sent to the developer or to any third party.
+The refresh token is stored locally, encrypted with Windows DPAPI.
+
+Traduction pour vous :
+Agenda Google accessible est une application Windows gratuite qui permet aux personnes aveugles
+et malvoyantes de gérer leur Google Agenda au clavier avec un lecteur d'écran. L'interface web
+de Google Agenda est difficile à utiliser avec un lecteur d'écran ; l'application présente les
+jours et les rendez-vous sous forme de listes simples. L'autorisation « calendar » est nécessaire
+pour : lister les agendas, y compris partagés ; lire, créer, modifier et supprimer des rendez-vous ;
+régler les alarmes ; partager un agenda et gérer son partage ; s'abonner à un agenda partagé ;
+créer un agenda. Les autorisations plus étroites ne couvrent pas le partage, la liste des agendas
+ni la création d'agenda. L'application fonctionne entièrement sur l'ordinateur de l'utilisateur,
+sans serveur : aucune donnée n'est envoyée au développeur ni à un tiers.
+
+
+ÉTAPE 6. ENVOYER
+
+Rubrique « Verification Center » (Centre de validation) : « Préparer la validation »,
+suivez les écrans, puis envoyez. Google répond par e-mail, parfois avec des questions :
+répondez depuis le même fil. Comptez quelques jours à quelques semaines.
+Une fois validée, l'avertissement disparaît et la limite de 100 utilisateurs est levée.
+
+
+ET ENSUITE : DISTRIBUER
+
+Dans l'agenda, menu Fichier, « Préparer une version à distribuer ».
+L'application crée un zip avec le programme, vos identifiants et un guide simple.
+Les personnes qui le reçoivent n'ont qu'à le décompresser, le lancer et se connecter.
+Ne publiez pas le fichier agenda-identifiants.json dans le code source sur GitHub.
