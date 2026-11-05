@@ -1,5 +1,7 @@
 # Agenda Google accessible
 
+![Téléchargements](https://img.shields.io/github/downloads/exatropix/agenda-google-accessible/total?label=T%C3%A9l%C3%A9chargements)
+
 **Votre agenda Google entièrement au clavier, accessible avec NVDA et JAWS. Pour Windows 10 et 11. En français.**
 
 Par Exatropic.
@@ -18,9 +20,11 @@ Par Exatropic.
 
 ## Télécharger
 
-[AgendaGoogleAccessible.zip](https://github.com/exatropix/agenda-google-accessible/raw/main/telechargement/AgendaGoogleAccessible.zip)
+[AgendaGoogleAccessible.zip](https://github.com/exatropix/agenda-google-accessible/releases/latest/download/AgendaGoogleAccessible.zip)
 
 Décompressez-le dans un dossier, puis lancez AgendaGoogleAccessible.exe. Si Windows affiche « Windows a protégé votre ordinateur », choisissez « Informations complémentaires », puis « Exécuter quand même » : le programme n'est pas signé.
+
+Les versions et leurs nouveautés : [page des versions](https://github.com/exatropix/agenda-google-accessible/releases).
 
 Cette version publique demande un identifiant Google personnel, à créer une seule fois dans Google Cloud (environ 10 minutes, gratuit). Toutes les étapes sont dans le [mode d'emploi](LISEZMOI.txt), partie 2.
 
@@ -44,10 +48,14 @@ Sous Windows : `dotnet build -c Release` dans `source`. Sous Linux, avec Mono : 
 
 Ne mettez jamais de fichier d'identifiants Google (`credentials.json`, `agenda-identifiants.json`) dans le dépôt : le fichier `.gitignore` les exclut.
 
+## Publier une nouvelle version
+
+Onglet Actions, « Publier une version », « Run workflow », puis le numéro (par exemple 1.7). GitHub compile le programme et le met en téléchargement. Les notes de version viennent du fichier `notes/vNUMÉRO.md` s'il existe.
+
 ## Licence
 
 Domaine public (Unlicense) : utilisez, copiez, modifiez et redistribuez librement. Voir [LICENSE](LICENSE).
 
 ## English
 
-**Accessible Google Calendar** is a free Windows app for managing Google Calendar entirely from the keyboard with NVDA or JAWS: day and event lists, all calendars at once or one at a time, recurring events, audible reminders with a screen-reader friendly alert window, a morning summary, calendar sharing and search. The interface is in French. It talks directly to Google with no intermediate server. [Download](https://github.com/exatropix/agenda-google-accessible/raw/main/telechargement/AgendaGoogleAccessible.zip) · [Privacy policy](https://exatropix.github.io/agenda-google-accessible/confidentialite.html) · Public domain (Unlicense).
+**Accessible Google Calendar** is a free Windows app for managing Google Calendar entirely from the keyboard with NVDA or JAWS: day and event lists, all calendars at once or one at a time, recurring events, audible reminders with a screen-reader friendly alert window, a morning summary, calendar sharing and search. The interface is in French. It talks directly to Google with no intermediate server. [Download](https://github.com/exatropix/agenda-google-accessible/releases/latest/download/AgendaGoogleAccessible.zip) · [Privacy policy](https://exatropix.github.io/agenda-google-accessible/confidentialite.html) · Public domain (Unlicense).
