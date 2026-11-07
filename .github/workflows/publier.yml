@@ -23,9 +23,22 @@ jobs:
       - name: Compiler
         run: sh source/build.sh
       - name: Préparer le zip
+        env:
+          # Identifiants Google de l'application (contenu du fichier JSON « application de bureau »),
+          # rangés dans Settings > Secrets and variables > Actions, sous le nom GOOGLE_IDENTIFIANTS.
+          # Ils vont dans le zip téléchargeable, jamais dans le code source.
+          IDENTIFIANTS: ${{ secrets.GOOGLE_IDENTIFIANTS }}
         run: |
+          if [ -z "$IDENTIFIANTS" ]; then
+            echo "::error::Le secret GOOGLE_IDENTIFIANTS est absent : sans lui, les utilisateurs devraient créer leur propre accès Google. Publication annulée."
+            exit 1
+          fi
           mkdir -p paquet/AgendaGoogleAccessible
-          cp source/out/AgendaGoogleAccessible.exe source/out/AgendaGoogleAccessible.exe.config LISEZMOI.txt paquet/AgendaGoogleAccessible/
+          cp source/out/AgendaGoogleAccessible.exe source/out/AgendaGoogleAccessible.exe.config paquet/AgendaGoogleAccessible/
+          cp GUIDE-UTILISATEUR.txt paquet/AgendaGoogleAccessible/LISEZMOI.txt
+          printf '%s' "$IDENTIFIANTS" > paquet/AgendaGoogleAccessible/agenda-identifiants.json
+          python3 -c "import json,sys; d=json.load(open('paquet/AgendaGoogleAccessible/agenda-identifiants.json')); sys.exit(0 if d.get('installed',{}).get('client_id') else 1)" \
+            || { echo "::error::Le secret GOOGLE_IDENTIFIANTS n'est pas un fichier d'identifiants Google « application de bureau » valide."; exit 1; }
           cd paquet && zip -qr ../AgendaGoogleAccessible.zip AgendaGoogleAccessible
       - name: Publier
         env:

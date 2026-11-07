@@ -1,0 +1,54 @@
+﻿AGENDA GOOGLE ACCESSIBLE - Version 1.6.2
+Par Luc Rasschaert (Exatropic)
+
+Gérez votre agenda Google au clavier, avec NVDA ou JAWS : rendez-vous, alarmes,
+résumé du matin, agendas partagés.
+
+
+1. INSTALLATION
+
+Décompressez ce dossier où vous voulez, par exemple dans Documents.
+Gardez les trois fichiers ensemble : AgendaGoogleAccessible.exe,
+AgendaGoogleAccessible.exe.config et agenda-identifiants.json.
+Rien d'autre à installer : Windows 10 et 11 ont déjà tout ce qu'il faut.
+
+
+2. PREMIÈRE CONNEXION (une seule fois)
+
+1. Lancez AgendaGoogleAccessible.exe.
+2. Un message annonce l'ouverture du navigateur. Validez.
+3. Choisissez votre compte Google.
+4. Si Google affiche « Google n'a pas validé cette application » : activez le lien
+   « Paramètres avancés », puis « Accéder à Agenda accessible ».
+5. Autorisez l'accès à l'agenda (bouton « Continuer »).
+6. La page affiche « Connexion réussie ». Fermez l'onglet (Ctrl+W)
+   et revenez à l'agenda (Alt+Tab).
+
+Les fois suivantes, l'agenda se connecte tout seul.
+
+
+3. L'ESSENTIEL
+
+- Deux listes : les jours, puis les rendez-vous du jour choisi. F6 passe de l'une à l'autre.
+- Entrée sur un rendez-vous : son détail. Ctrl+N : nouveau rendez-vous.
+  Ctrl+M : modifier. Suppr : supprimer.
+- Ctrl+G : afficher tous vos agendas ou un seul.
+- Ctrl+F : rechercher. Ctrl+D : aller à une date. Ctrl+Origine : aujourd'hui.
+- Dans la fiche d'un nouveau rendez-vous, « Répétition » (Alt+P) : tous les jours, toutes les semaines,
+  tous les mois, tous les ans, ou « Anniversaire » (tous les ans, toute la journée).
+- Dans la fiche d'un rendez-vous, cases d'alarme : 1 heure, 30 minutes, 15 minutes avant,
+  ou à l'heure exacte.
+- Chaque matin, un résumé annonce les rendez-vous du jour.
+- L'agenda démarre avec Windows et reste actif près de l'horloge pour sonner.
+  Alt+F4 ferme la fenêtre, Ctrl+Alt+A la rouvre, Ctrl+Q quitte vraiment.
+- Le résumé du matin et les alarmes se ferment avec Échap ou Entrée.
+- F1 : aide complète. Ctrl+F1 : toutes les touches.
+
+
+4. CONFIDENTIALITÉ
+
+L'application parle directement à Google, sans aucun serveur intermédiaire :
+personne d'autre que vous ne voit votre agenda.
+Le jeton de connexion est enregistré chiffré sur votre ordinateur.
+Menu Fichier, « Se déconnecter » l'efface. Vous pouvez aussi retirer l'accès à tout moment
+depuis https://myaccount.google.com/permissions

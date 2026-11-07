@@ -24,9 +24,9 @@ Par Exatropic.
 
 Décompressez-le dans un dossier, puis lancez AgendaGoogleAccessible.exe. Si Windows affiche « Windows a protégé votre ordinateur », choisissez « Informations complémentaires », puis « Exécuter quand même » : le programme n'est pas signé.
 
-Les versions et leurs nouveautés : [page des versions](https://github.com/exatropix/agenda-google-accessible/releases).
+Rien à préparer chez Google : au premier lancement, le navigateur s'ouvre, vous choisissez votre compte Gmail, vous autorisez l'accès à l'agenda, et c'est tout. Tant que Google n'a pas terminé sa vérification de l'application, il affiche « Google n'a pas validé cette application » : activez « Paramètres avancés », puis « Accéder à Agenda accessible ». Le [guide utilisateur](GUIDE-UTILISATEUR.txt) détaille ces étapes.
 
-Cette version publique demande un identifiant Google personnel, à créer une seule fois dans Google Cloud (environ 10 minutes, gratuit). Toutes les étapes sont dans le [mode d'emploi](LISEZMOI.txt), partie 2.
+Les versions et leurs nouveautés : [page des versions](https://github.com/exatropix/agenda-google-accessible/releases).
 
 ## Les commandes essentielles
 
@@ -46,11 +46,11 @@ L'application parle directement à Google, sans aucun serveur intermédiaire : p
 Le code source est dans le dossier `source` (C#, .NET Framework 4.6.2, Windows Forms, sans dépendance externe).
 Sous Windows : `dotnet build -c Release` dans `source`. Sous Linux, avec Mono : `sh source/build.sh`.
 
-Ne mettez jamais de fichier d'identifiants Google (`credentials.json`, `agenda-identifiants.json`) dans le dépôt : le fichier `.gitignore` les exclut.
+Ne mettez jamais de fichier d'identifiants Google (`credentials.json`, `agenda-identifiants.json`) dans le dépôt : le fichier `.gitignore` les exclut. Les identifiants de l'application sont ajoutés au zip téléchargeable par la publication automatique, depuis le secret GitHub `GOOGLE_IDENTIFIANTS`. Pour compiler votre propre copie, utilisez votre propre identifiant Google (voir LISEZMOI.txt, partie 2).
 
 ## Publier une nouvelle version
 
-Onglet Actions, « Publier une version », « Run workflow », puis le numéro (par exemple 1.7). GitHub compile le programme et le met en téléchargement. Les notes de version viennent du fichier `notes/vNUMÉRO.md` s'il existe.
+Onglet Actions, « Publier une version », « Run workflow », puis le numéro (par exemple 1.7). GitHub compile le programme, y ajoute les identifiants Google de l'application (secret `GOOGLE_IDENTIFIANTS`) et le met en téléchargement. Les notes de version viennent du fichier `notes/vNUMÉRO.md` s'il existe.
 
 ## Licence
 
