@@ -425,7 +425,7 @@ Saisie rapide (Ctrl+Maj+N) : écrivez le rendez-vous en une phrase, par exemple
 « Dentiste mardi 14h30 Rennes » ou « Réunion demain de 18h à 20h salle des fêtes ».
 La fiche s'ouvre déjà remplie : vérifiez-la, puis enregistrez.
 Dupliquer (Ctrl+Maj+D) : ouvre une copie du rendez-vous, à changer de date.
-Dans la liste des rendez-vous, Ctrl+Flèche droite ou gauche décale d'un jour,
+Dans la liste des jours ou des rendez-vous, Ctrl+Flèche droite ou gauche décale d'un jour,
 Ctrl+Flèche bas ou haut d'une heure ; Ctrl+Z annule le dernier déplacement.
 Invitations reçues : Ctrl+Maj+A accepter, Ctrl+Maj+P peut-être, Ctrl+Maj+R refuser.
 Ctrl+Maj+V : rejoindre la visioconférence (Google Meet, Zoom, Teams).
@@ -476,7 +476,7 @@ Les alarmes sont aussi annoncées à la voix (menu Alarmes pour le couper).
 8. Installation et mises à jour (menu Aide)
 Au premier lancement, l'agenda propose de s'installer : menu Démarrer,
 Bureau, démarrage avec Windows, désinstallation depuis « Applications installées ».
-Il vérifie chaque jour s'il existe une nouvelle version et propose de l'installer ;
+Il vérifie toutes les 4 heures s'il existe une nouvelle version et propose de l'installer ;
 il redémarre alors tout seul. « Rechercher les mises à jour » vérifie à la demande.
 
 La ligne d'état en bas de la fenêtre se lit avec NVDA+Fin (JAWS : Insert+Page suivante).
@@ -484,7 +484,7 @@ Le guide complet, avec la préparation de l'accès Google, est dans le fichier L
 
         /// <summary>Guide court fourni avec une version distribuée (sans les étapes Google Cloud).</summary>
         public const string UserGuide =
-@"AGENDA GOOGLE ACCESSIBLE - Version 1.7.1
+@"AGENDA GOOGLE ACCESSIBLE - Version 1.7.2
 Par Luc Rasschaert (Exatropic)
 
 Gérez votre agenda Google au clavier, avec NVDA ou JAWS : rendez-vous, alarmes,

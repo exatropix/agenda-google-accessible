@@ -687,7 +687,7 @@ namespace AgendaAccessible
             }
             else if (!startHidden && !Installer.IsInstalledCopy && !Installer.IsInstalled && Settings.Get("installation_refusee") != "1")
                 OfferInstall(false);
-            updateTimer = new System.Windows.Forms.Timer { Interval = 3 * 3600 * 1000 };
+            updateTimer = new System.Windows.Forms.Timer { Interval = 3600 * 1000 };
             updateTimer.Tick += (s, e) => CheckUpdates(false);
             updateTimer.Start();
             CheckUpdates(false);
@@ -741,8 +741,10 @@ namespace AgendaAccessible
         async void CheckUpdates(bool manual)
         {
             if (checkingUpdate) return;
-            string today = DateTime.Today.ToString("yyyyMMdd");
-            if (!manual && (!Updater.AutoCheck || Settings.Get("maj_derniere") == today)) return;
+            // Vérification automatique toutes les 4 heures au plus.
+            long last;
+            long.TryParse(Settings.Get("maj_derniere_heure", "0"), out last);
+            if (!manual && (!Updater.AutoCheck || (DateTime.UtcNow - new DateTime(last, DateTimeKind.Utc)).TotalHours < 4)) return;
             checkingUpdate = true;
             try
             {
@@ -754,7 +756,7 @@ namespace AgendaAccessible
                     if (manual) Ui.Error(this, "Impossible de vérifier les mises à jour : " + ex.Message);
                     return;
                 }
-                Settings.Set("maj_derniere", today);
+                Settings.Set("maj_derniere_heure", DateTime.UtcNow.Ticks.ToString());
                 if (info == null)
                 {
                     if (manual) Ui.Info(this, "Vous avez la dernière version (" + AppInfo.VersionText + ").");
@@ -1121,19 +1123,26 @@ namespace AgendaAccessible
 
         void OnApptsKeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Control && !e.Alt && !e.Shift && Settings.Get("ctrl_fleches", "1") == "1")
-            {
-                TimeSpan? delta = null;
-                if (e.KeyCode == Keys.Right) delta = TimeSpan.FromDays(1);
-                else if (e.KeyCode == Keys.Left) delta = TimeSpan.FromDays(-1);
-                else if (e.KeyCode == Keys.Down) delta = TimeSpan.FromHours(1);
-                else if (e.KeyCode == Keys.Up) delta = TimeSpan.FromHours(-1);
-                if (delta != null) { e.Handled = true; e.SuppressKeyPress = true; MoveSelected(delta.Value); return; }
-            }
             if (e.Control || e.Alt) return;
             if (e.KeyCode == Keys.Enter) { e.Handled = true; e.SuppressKeyPress = true; ShowDetail(); }
             else if (e.KeyCode == Keys.Delete) { e.Handled = true; DeleteEvent(null); }
             else if (e.KeyCode == Keys.Escape) { e.Handled = true; e.SuppressKeyPress = true; days.Focus(); }
+        }
+
+        /// <summary>Ctrl+Flèches dans la liste des jours ou des rendez-vous : décaler le rendez-vous.
+        /// Traité ici, avant que la liste ne s'en serve pour se déplacer elle-même.</summary>
+        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+        {
+            if ((ActiveControl == appts || ActiveControl == days) && Settings.Get("ctrl_fleches", "1") == "1")
+            {
+                TimeSpan? delta = null;
+                if (keyData == (Keys.Control | Keys.Right)) delta = TimeSpan.FromDays(1);
+                else if (keyData == (Keys.Control | Keys.Left)) delta = TimeSpan.FromDays(-1);
+                else if (keyData == (Keys.Control | Keys.Down)) delta = TimeSpan.FromHours(1);
+                else if (keyData == (Keys.Control | Keys.Up)) delta = TimeSpan.FromHours(-1);
+                if (delta != null) { MoveSelected(delta.Value); return true; }
+            }
+            return base.ProcessCmdKey(ref msg, keyData);
         }
 
         void OnFormKeyDown(object sender, KeyEventArgs e)
@@ -1318,9 +1327,10 @@ namespace AgendaAccessible
         /// <summary>Décale le rendez-vous sélectionné d'un jour ou d'une heure (Ctrl+flèches), sans ouvrir la fiche.</summary>
         async void MoveSelected(TimeSpan delta)
         {
-            if (current == null || loading) return;
+            if (current == null) return;
+            if (loading) { Speech.Say("Patientez, l'agenda se met à jour."); return; }
             var ev = SelectedForAction("déplacer");
-            if (ev == null) return;
+            if (ev == null) { Speech.Say("Aucun rendez-vous à déplacer ici."); return; }
             var cal = CalOf(ev);
             if (!cal.CanEdit) { Ui.Error(this, "L'agenda « " + cal.Name + " » est en lecture seule : ce rendez-vous ne peut pas être déplacé."); return; }
             if (ev.AllDay && delta.TotalDays != Math.Round(delta.TotalDays))
