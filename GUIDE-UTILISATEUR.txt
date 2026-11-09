@@ -1,4 +1,4 @@
-﻿AGENDA GOOGLE ACCESSIBLE - Version 1.7.4
+﻿AGENDA GOOGLE ACCESSIBLE - Version 1.7.5
 Par Luc Rasschaert (Exatropic)
 
 Gérez votre agenda Google au clavier, avec NVDA ou JAWS : rendez-vous, alarmes,

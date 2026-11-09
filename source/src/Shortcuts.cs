@@ -23,7 +23,10 @@ namespace AgendaAccessible
         public static readonly GlobalShortcut Today = new GlobalShortcut { SettingKey = "rac_jour", Label = "Dire les rendez-vous du jour", Explanation = "NVDA dit les rendez-vous d'aujourd'hui, sans ouvrir l'agenda." };
         public static readonly GlobalShortcut Launch = new GlobalShortcut { SettingKey = "rac_lancer", Label = "Lancer l'agenda quand il est fermé", Explanation = "Raccourci du menu Démarrer. Windows n'accepte ici que des combinaisons avec Ctrl+Alt ou Ctrl+Maj.", ForLauncher = true };
 
-        public static readonly GlobalShortcut[] All = { Open, Next, Today, Launch };
+        public static readonly GlobalShortcut ZoomMic = new GlobalShortcut { SettingKey = "rac_zoom_micro", Label = "Zoom : couper ou rétablir le micro", Explanation = "Pendant une réunion Zoom, coupe ou rétablit le micro depuis n'importe où et annonce l'état." };
+        public static readonly GlobalShortcut ZoomVideo = new GlobalShortcut { SettingKey = "rac_zoom_camera", Label = "Zoom : couper ou rétablir la caméra", Explanation = "Pendant une réunion Zoom, coupe ou rétablit la caméra depuis n'importe où et annonce l'état." };
+
+        public static readonly GlobalShortcut[] All = { Open, Next, Today, Launch, ZoomMic, ZoomVideo };
 
         public static readonly string[] Modifiers = { "Ctrl+Alt", "Ctrl+Maj", "Ctrl+Alt+Maj", "Alt+Maj", "Windows+Maj" };
         public static readonly string[] LauncherModifiers = { "Ctrl+Alt", "Ctrl+Maj", "Ctrl+Alt+Maj" };

@@ -42,7 +42,7 @@ namespace AgendaAccessible
         readonly NotifyIcon tray;
         readonly bool startHidden;
         bool reallyQuit;
-        const int HotKeyId = 1, HotKeyNext = 2, HotKeyToday = 3;
+        const int HotKeyId = 1, HotKeyNext = 2, HotKeyToday = 3, HotKeyZoomMic = 4, HotKeyZoomVideo = 5;
 
         List<CalendarInfo> calendarList = new List<CalendarInfo>();
         CalendarInfo current;
@@ -154,8 +154,9 @@ namespace AgendaAccessible
         List<string> RegisterHotkeys()
         {
             var refused = new List<string>();
-            foreach (int id in new[] { HotKeyId, HotKeyNext, HotKeyToday }) Native.UnregisterHotKey(Handle, id);
-            var map = new[] { Tuple.Create(HotKeyId, GlobalShortcut.Open), Tuple.Create(HotKeyNext, GlobalShortcut.Next), Tuple.Create(HotKeyToday, GlobalShortcut.Today) };
+            foreach (int id in new[] { HotKeyId, HotKeyNext, HotKeyToday, HotKeyZoomMic, HotKeyZoomVideo }) Native.UnregisterHotKey(Handle, id);
+            var map = new[] { Tuple.Create(HotKeyId, GlobalShortcut.Open), Tuple.Create(HotKeyNext, GlobalShortcut.Next), Tuple.Create(HotKeyToday, GlobalShortcut.Today),
+                Tuple.Create(HotKeyZoomMic, GlobalShortcut.ZoomMic), Tuple.Create(HotKeyZoomVideo, GlobalShortcut.ZoomVideo) };
             foreach (var t in map)
             {
                 uint mods, vk;
@@ -207,6 +208,8 @@ namespace AgendaAccessible
             Native.UnregisterHotKey(Handle, HotKeyId);
             Native.UnregisterHotKey(Handle, HotKeyNext);
             Native.UnregisterHotKey(Handle, HotKeyToday);
+            Native.UnregisterHotKey(Handle, HotKeyZoomMic);
+            Native.UnregisterHotKey(Handle, HotKeyZoomVideo);
             base.OnHandleDestroyed(e);
         }
 
@@ -215,6 +218,8 @@ namespace AgendaAccessible
             if (m.Msg == 0x0312 && m.WParam.ToInt32() == HotKeyId) { ShowMain(); return; }
             if (m.Msg == 0x0312 && m.WParam.ToInt32() == HotKeyNext) { Speech.Say(monitor.NextEventSentence()); return; }
             if (m.Msg == 0x0312 && m.WParam.ToInt32() == HotKeyToday) { Speech.Say(monitor.TodaySentence()); return; }
+            if (m.Msg == 0x0312 && m.WParam.ToInt32() == HotKeyZoomMic) { Zoom.Toggle(false); return; }
+            if (m.Msg == 0x0312 && m.WParam.ToInt32() == HotKeyZoomVideo) { Zoom.Toggle(true); return; }
             base.WndProc(ref m);
         }
 
@@ -535,7 +540,8 @@ namespace AgendaAccessible
                     Item("&Accepter", Keys.Control | Keys.Shift | Keys.A, null, () => Respond("accepted")),
                     Item("&Peut-être", Keys.Control | Keys.Shift | Keys.P, null, () => Respond("tentative")),
                     Item("&Refuser", Keys.Control | Keys.Shift | Keys.R, null, () => Respond("declined"))),
-                Item("Re&joindre la visioconférence", Keys.Control | Keys.Shift | Keys.V, null, () => JoinMeeting())));
+                Item("Re&joindre la visioconférence", Keys.Control | Keys.Shift | Keys.V, null, () => JoinMeeting()),
+                Item("Télécommande &Zoom", Keys.None, null, () => ZoomRemoteForm.ShowFor(null))));
 
             ms.Items.Add(MenuOf("&Affichage",
                 Item("&Aujourd'hui", Keys.Control | Keys.Home, "Ctrl+Origine", async () => await GoToDay(DateTime.Today, false)),
@@ -1393,6 +1399,22 @@ namespace AgendaAccessible
             Uri link;
             if (ev.MeetLink == null || !Uri.TryCreate(ev.MeetLink, UriKind.Absolute, out link) || link.Scheme != Uri.UriSchemeHttps)
             { Ui.Info(this, "Ce rendez-vous n'a pas de lien de visioconférence utilisable."); return; }
+            if (Zoom.IsZoomLink(link.AbsoluteUri))
+            {
+                int mode = Zoom.AskMode(this, EventText.Title(ev));
+                if (mode == 0) { appts.Focus(); return; }
+                try
+                {
+                    bool app = Zoom.Open(link.AbsoluteUri);
+                    if (mode == 1)
+                    {
+                        if (!app) Ui.Info(this, "L'application Zoom n'est pas installée : la réunion s'ouvre dans le navigateur. La télécommande ne fonctionne qu'avec l'application Zoom.");
+                        else ZoomRemoteForm.ShowFor(EventText.Title(ev));
+                    }
+                }
+                catch (Exception ex) { Ui.Error(this, "Impossible d'ouvrir la réunion : " + ex.Message); }
+                return;
+            }
             if (!Ui.Confirm(this, "Ouvrir la visioconférence de « " + EventText.Title(ev) + " » dans votre navigateur ?\r\n\r\n" + ev.MeetLink)) { appts.Focus(); return; }
             try { System.Diagnostics.Process.Start(link.AbsoluteUri); }
             catch (Exception ex) { Ui.Error(this, "Impossible d'ouvrir le lien : " + ex.Message); }
