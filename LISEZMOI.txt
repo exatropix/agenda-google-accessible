@@ -1,4 +1,4 @@
-﻿AGENDA GOOGLE ACCESSIBLE - Version 1.7.2
+﻿AGENDA GOOGLE ACCESSIBLE - Version 1.7.3
 Par Luc Rasschaert (Exatropic)
 
 Application Windows pour gérer votre agenda Google au clavier, avec NVDA ou JAWS :
@@ -8,6 +8,15 @@ Application Windows pour gérer votre agenda Google au clavier, avec NVDA ou JAW
 - voir qui a accès à un agenda et retirer un accès ;
 - ajouter à votre liste un agenda qu'une autre personne vous a partagé ;
 - créer un nouvel agenda (par exemple un agenda familial à partager).
+
+
+NOUVEAU EN VERSION 1.7.3
+
+- Menu Préférences, « Touches de l'agenda » : toutes les commandes et leurs touches, chacune modifiable.
+  Choisissez une commande, puis ses modificateurs (Ctrl, Ctrl+Maj, Ctrl+Alt…) et sa touche, et activez « Appliquer ».
+  « Aucune touche » libère une combinaison déjà utilisée par NVDA ou l'un de ses modules.
+  « Rétablir toutes les touches par défaut » remet tout comme au départ.
+- « Raccourcis globaux » (utilisables partout) reste dans le même menu, désactivés au départ.
 
 
 NOUVEAU EN VERSION 1.7.1

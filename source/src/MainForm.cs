@@ -108,7 +108,9 @@ namespace AgendaAccessible
             status = new ToolStripStatusLabel { Text = "Démarrage…", Spring = true, TextAlign = ContentAlignment.MiddleLeft };
             strip.Items.Add(status);
 
+            AppKeys.Commands.Clear();
             var menu = BuildMenu();
+            AppKeys.ApplyAll();
             MainMenuStrip = menu;
             Controls.Add(grid);
             Controls.Add(strip);
@@ -163,16 +165,25 @@ namespace AgendaAccessible
             return refused;
         }
 
+        void EditAppKeys()
+        {
+            using (var f = new AppKeysForm())
+            {
+                if (f.ShowDialog(this) != DialogResult.OK) { days.Focus(); return; }
+                foreach (var p in f.Result) AppKeys.Set(p.Key, p.Value);
+            }
+            AppKeys.ApplyAll();
+            days.Focus();
+            SetStatus("Touches de l'agenda enregistrées.");
+        }
+
         void EditShortcuts()
         {
-            bool arrows;
             using (var f = new ShortcutsForm())
             {
                 if (f.ShowDialog(this) != DialogResult.OK) { days.Focus(); return; }
                 foreach (var g in GlobalShortcut.All) g.Value = f.ValueOf(g);
-                arrows = f.CtrlArrows;
             }
-            Settings.Set("ctrl_fleches", arrows ? "1" : "0");
             var refused = RegisterHotkeys();
             if (Installer.IsInstalled) Installer.UpdateLaunchShortcut();
             UpdateShortcutMenus();
@@ -466,6 +477,7 @@ namespace AgendaAccessible
             if (keys != Keys.None) it.ShortcutKeys = keys;
             if (display != null) it.ShortcutKeyDisplayString = display;
             if (click != null) it.Click += (s, e) => click();
+            if (click != null) AppKeys.Register(it, keys, display);
             return it;
         }
 
@@ -513,10 +525,10 @@ namespace AgendaAccessible
                 Item("D&upliquer le rendez-vous…", Keys.Control | Keys.Shift | Keys.D, null, () => DuplicateEvent()),
                 new ToolStripSeparator(),
                 MenuOf("Dé&placer le rendez-vous",
-                    Item("Au jour &suivant", Keys.None, "Ctrl+Flèche droite", () => MoveSelected(TimeSpan.FromDays(1))),
-                    Item("Au jour &précédent", Keys.None, "Ctrl+Flèche gauche", () => MoveSelected(TimeSpan.FromDays(-1))),
-                    Item("Une heure plus &tard", Keys.None, "Ctrl+Flèche bas", () => MoveSelected(TimeSpan.FromHours(1))),
-                    Item("Une heure plus tô&t", Keys.None, "Ctrl+Flèche haut", () => MoveSelected(TimeSpan.FromHours(-1))),
+                    Item("Au jour &suivant", Keys.Control | Keys.Right, null, () => MoveSelected(TimeSpan.FromDays(1))),
+                    Item("Au jour &précédent", Keys.Control | Keys.Left, null, () => MoveSelected(TimeSpan.FromDays(-1))),
+                    Item("Une heure plus &tard", Keys.Control | Keys.Down, null, () => MoveSelected(TimeSpan.FromHours(1))),
+                    Item("Une heure plus tô&t", Keys.Control | Keys.Up, null, () => MoveSelected(TimeSpan.FromHours(-1))),
                     Item("&Annuler le dernier déplacement", Keys.Control | Keys.Z, null, () => UndoMove())),
                 new ToolStripSeparator(),
                 MenuOf("&Répondre à l'invitation",
@@ -555,7 +567,8 @@ namespace AgendaAccessible
                 Item("&Tester la sonnerie", Keys.None, null, () => TestRing())));
 
             ms.Items.Add(MenuOf("&Préférences",
-                Item("&Raccourcis clavier…", Keys.None, null, () => EditShortcuts())));
+                Item("&Touches de l'agenda…", Keys.None, null, () => EditAppKeys()),
+                Item("Raccourcis &globaux (utilisables partout)…", Keys.None, null, () => EditShortcuts())));
 
             ms.Items.Add(MenuOf("A&genda",
                 Item("&Choisir l'agenda…", Keys.Control | Keys.G, null, () => ChooseCalendar()),
@@ -1127,22 +1140,6 @@ namespace AgendaAccessible
             if (e.KeyCode == Keys.Enter) { e.Handled = true; e.SuppressKeyPress = true; ShowDetail(); }
             else if (e.KeyCode == Keys.Delete) { e.Handled = true; DeleteEvent(null); }
             else if (e.KeyCode == Keys.Escape) { e.Handled = true; e.SuppressKeyPress = true; days.Focus(); }
-        }
-
-        /// <summary>Ctrl+Flèches dans la liste des jours ou des rendez-vous : décaler le rendez-vous.
-        /// Traité ici, avant que la liste ne s'en serve pour se déplacer elle-même.</summary>
-        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
-        {
-            if ((ActiveControl == appts || ActiveControl == days) && Settings.Get("ctrl_fleches", "1") == "1")
-            {
-                TimeSpan? delta = null;
-                if (keyData == (Keys.Control | Keys.Right)) delta = TimeSpan.FromDays(1);
-                else if (keyData == (Keys.Control | Keys.Left)) delta = TimeSpan.FromDays(-1);
-                else if (keyData == (Keys.Control | Keys.Down)) delta = TimeSpan.FromHours(1);
-                else if (keyData == (Keys.Control | Keys.Up)) delta = TimeSpan.FromHours(-1);
-                if (delta != null) { MoveSelected(delta.Value); return true; }
-            }
-            return base.ProcessCmdKey(ref msg, keyData);
         }
 
         void OnFormKeyDown(object sender, KeyEventArgs e)

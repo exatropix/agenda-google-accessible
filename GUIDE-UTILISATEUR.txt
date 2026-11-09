@@ -1,4 +1,4 @@
-﻿AGENDA GOOGLE ACCESSIBLE - Version 1.7.2
+﻿AGENDA GOOGLE ACCESSIBLE - Version 1.7.3
 Par Luc Rasschaert (Exatropic)
 
 Gérez votre agenda Google au clavier, avec NVDA ou JAWS : rendez-vous, alarmes,
@@ -42,8 +42,8 @@ Les fois suivantes, l'agenda se connecte tout seul.
 - Chaque matin, un résumé annonce les rendez-vous du jour.
 - L'agenda démarre avec Windows et reste actif près de l'horloge pour sonner.
   Alt+F4 ferme la fenêtre, Ctrl+Q quitte vraiment.
-- Menu Préférences, Raccourcis clavier : des touches utilisables partout pour rouvrir l'agenda
-  ou faire dire le prochain rendez-vous par NVDA. Elles sont désactivées au départ.
+- Menu Préférences : « Touches de l'agenda » pour changer n'importe quelle touche (si NVDA l'utilise déjà),
+  « Raccourcis globaux » pour des touches utilisables partout. Ces dernières sont désactivées au départ.
 - Ctrl+Maj+N : saisie rapide en une phrase, par exemple « Dentiste mardi 14h30 Rennes ».
 - Ctrl+Maj+S : les 7 prochains jours. Ctrl+Flèches : décaler un rendez-vous.
 - Le résumé du matin et les alarmes se ferment avec Échap ou Entrée.

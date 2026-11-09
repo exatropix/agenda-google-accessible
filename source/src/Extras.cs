@@ -468,7 +468,7 @@ Ctrl+L : liste des prochaines alarmes.
 « Alarmes par défaut de mes agendas » : les alarmes des rendez-vous qui gardent
 « Alarmes par défaut ». Elles sont enregistrées dans Google, donc aussi sur votre téléphone.
 Vous pouvez aussi couper les alarmes, le résumé du matin ou le démarrage avec Windows.
-Raccourcis globaux (menu Préférences, Raccourcis clavier) : désactivés par défaut. Vous pouvez en activer
+Raccourcis globaux (menu Préférences, Raccourcis globaux) : désactivés par défaut. Vous pouvez en activer
 pour afficher l'agenda, faire dire par NVDA (ou JAWS) le prochain rendez-vous ou ceux du jour,
 depuis n'importe quelle application, et choisir leurs touches.
 Les alarmes sont aussi annoncées à la voix (menu Alarmes pour le couper).
@@ -484,7 +484,7 @@ Le guide complet, avec la préparation de l'accès Google, est dans le fichier L
 
         /// <summary>Guide court fourni avec une version distribuée (sans les étapes Google Cloud).</summary>
         public const string UserGuide =
-@"AGENDA GOOGLE ACCESSIBLE - Version 1.7.2
+@"AGENDA GOOGLE ACCESSIBLE - Version 1.7.3
 Par Luc Rasschaert (Exatropic)
 
 Gérez votre agenda Google au clavier, avec NVDA ou JAWS : rendez-vous, alarmes,
@@ -528,8 +528,8 @@ Les fois suivantes, l'agenda se connecte tout seul.
 - Chaque matin, un résumé annonce les rendez-vous du jour.
 - L'agenda démarre avec Windows et reste actif près de l'horloge pour sonner.
   Alt+F4 ferme la fenêtre, Ctrl+Q quitte vraiment.
-- Menu Préférences, Raccourcis clavier : des touches utilisables partout pour rouvrir l'agenda
-  ou faire dire le prochain rendez-vous par NVDA. Elles sont désactivées au départ.
+- Menu Préférences : « Touches de l'agenda » pour changer n'importe quelle touche (si NVDA l'utilise déjà),
+  « Raccourcis globaux » pour des touches utilisables partout. Ces dernières sont désactivées au départ.
 - Ctrl+Maj+N : saisie rapide en une phrase, par exemple « Dentiste mardi 14h30 Rennes ».
 - Ctrl+Maj+S : les 7 prochains jours. Ctrl+Flèches : décaler un rendez-vous.
 - Le résumé du matin et les alarmes se ferment avec Échap ou Entrée.
@@ -561,7 +561,10 @@ Partout dans la fenêtre principale
   Ctrl+R .................. résumé du jour
   Ctrl+Q .................. quitter complètement (plus d'alarmes)
   Alt+F4 .................. fermer la fenêtre (les alarmes restent actives)
-  Raccourcis globaux ....... à choisir dans Préférences, Raccourcis clavier (désactivés au départ)
+  Raccourcis globaux ....... à choisir dans Préférences, Raccourcis globaux (désactivés au départ)
+
+Toutes ces touches sont modifiables : menu Préférences, « Touches de l'agenda ».
+Utile si NVDA ou l'un de ses modules utilise déjà une combinaison.
   Ctrl+Maj+N .............. saisie rapide d'un rendez-vous en une phrase
   Ctrl+Maj+D .............. dupliquer le rendez-vous
   Ctrl+Maj+J .............. rendez-vous de demain
@@ -585,7 +588,7 @@ Liste des jours
   Entrée .................. aller aux rendez-vous du jour
 
 Liste des rendez-vous
-  Ctrl+Flèche droite/gauche  décaler d'un jour (option dans Préférences, Raccourcis clavier)
+  Ctrl+Flèche droite/gauche  décaler d'un jour
   Ctrl+Flèche bas/haut .... décaler d'une heure
   Entrée .................. lire le détail du rendez-vous
   Échap ................... revenir à la liste des jours
