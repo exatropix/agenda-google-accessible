@@ -470,7 +470,10 @@ Ctrl+L : liste des prochaines alarmes.
 Vous pouvez aussi couper les alarmes, le résumé du matin ou le démarrage avec Windows.
 Raccourcis globaux (menu Préférences, Raccourcis globaux) : désactivés par défaut. Vous pouvez en activer
 pour afficher l'agenda, faire dire par NVDA (ou JAWS) le prochain rendez-vous ou ceux du jour,
-depuis n'importe quelle application, et choisir leurs touches.
+depuis n'importe quelle application. Pour choisir une touche, placez-vous dans la zone du raccourci et
+pressez la combinaison (par exemple Ctrl+Alt+N) : l'agenda dit aussitôt si elle est disponible, ou vous
+prévient si un autre programme l'utilise. Si rien n'est annoncé, NVDA intercepte la combinaison : essayez-en
+une autre. Retour arrière désactive le raccourci.
 Les alarmes sont aussi annoncées à la voix (menu Alarmes pour le couper).
 
 8. Installation et mises à jour (menu Aide)
@@ -484,7 +487,7 @@ Le guide complet, avec la préparation de l'accès Google, est dans le fichier L
 
         /// <summary>Guide court fourni avec une version distribuée (sans les étapes Google Cloud).</summary>
         public const string UserGuide =
-@"AGENDA GOOGLE ACCESSIBLE - Version 1.7.3
+@"AGENDA GOOGLE ACCESSIBLE - Version 1.7.4
 Par Luc Rasschaert (Exatropic)
 
 Gérez votre agenda Google au clavier, avec NVDA ou JAWS : rendez-vous, alarmes,

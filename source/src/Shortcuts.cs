@@ -70,10 +70,11 @@ namespace AgendaAccessible
         public string MenuText { get { return string.IsNullOrEmpty(Value) ? null : Value + ", partout"; } }
     }
 
-    /// <summary>Préférences, Raccourcis clavier globaux : pour chaque raccourci, l'activer ou non et choisir sa combinaison.</summary>
+    /// <summary>Préférences, Raccourcis globaux : pour chaque raccourci, l'utilisateur presse la combinaison voulue
+    /// dans une zone de saisie ; l'agenda teste aussitôt si Windows l'accepte et l'annonce.</summary>
     class ShortcutsForm : Form
     {
-        readonly Dictionary<GlobalShortcut, Tuple<CheckBox, ComboBox, ComboBox>> rows = new Dictionary<GlobalShortcut, Tuple<CheckBox, ComboBox, ComboBox>>();
+        readonly Dictionary<GlobalShortcut, CaptureBox> rows = new Dictionary<GlobalShortcut, CaptureBox>();
 
         public ShortcutsForm()
         {
@@ -81,68 +82,92 @@ namespace AgendaAccessible
             Font = Ui.BaseFont;
             StartPosition = FormStartPosition.CenterParent;
             MinimizeBox = false; MaximizeBox = false;
-            ClientSize = new Size(760, 640);
+            ClientSize = new Size(760, 600);
 
             var panel = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoScroll = true, Padding = new Padding(10) };
             panel.Controls.Add(new Label
             {
-                Text = "Raccourcis globaux : ils fonctionnent depuis n'importe quelle application. Ils sont désactivés par défaut, "
-                     + "car ils peuvent entrer en conflit avec d'autres programmes. Cochez ceux que vous voulez et choisissez leurs touches.",
+                Text = "Raccourcis globaux : ils fonctionnent depuis n'importe quelle application. Ils sont désactivés par défaut. "
+                     + "Pour en choisir un, placez-vous dans sa zone et pressez la combinaison voulue, par exemple Ctrl+Alt+N : "
+                     + "l'agenda vérifie aussitôt si elle est libre et vous le dit. Si rien n'est annoncé, c'est que NVDA ou un autre "
+                     + "programme intercepte cette combinaison : essayez-en une autre. Retour arrière ou Suppr désactive le raccourci. "
+                     + "Tab passe à la zone suivante.",
                 AutoSize = true, MaximumSize = new Size(720, 0)
             });
-            char[] mnemonics = { 'f', 'p', 'j', 'l' };
-            int n = 0;
             foreach (var g in GlobalShortcut.All)
             {
-                string mods, key;
-                bool on = GlobalShortcut.Split(g.Value, out mods, out key);
-                var box = new GroupBox { Text = g.Label, Width = 720, Height = 120 };
-                var cb = new CheckBox { Text = "Activer : " + Mnemonic(g.Label, mnemonics[n]), Location = new Point(12, 26), AutoSize = true, Checked = on };
-                cb.AccessibleName = "Activer : " + g.Label;
-                cb.AccessibleDescription = g.Explanation;
-                var modList = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Location = new Point(12, 70), Width = 220 };
-                modList.Items.AddRange(g.ForLauncher ? GlobalShortcut.LauncherModifiers : GlobalShortcut.Modifiers);
-                modList.AccessibleName = g.Label + " : touches de modification";
-                var keyList = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Location = new Point(250, 70), Width = 120 };
-                keyList.Items.AddRange(GlobalShortcut.KeyNames);
-                keyList.AccessibleName = g.Label + " : touche";
-                modList.SelectedItem = on && modList.Items.Contains(mods) ? mods : "Ctrl+Alt";
-                keyList.SelectedItem = on ? key : DefaultKey(g);
-                modList.Enabled = keyList.Enabled = on;
-                cb.CheckedChanged += (s, e) => modList.Enabled = keyList.Enabled = cb.Checked;
-                box.Controls.Add(cb); box.Controls.Add(modList); box.Controls.Add(keyList);
-                box.Controls.Add(new Label { Text = "puis", Location = new Point(236, 74), AutoSize = true, AccessibleRole = AccessibleRole.StaticText });
+                var label = new Label { Text = g.Label + " :", AutoSize = true, Margin = new Padding(3, 12, 3, 0) };
+                var box = new CaptureBox(this, g) { Width = 400 };
+                box.AccessibleName = g.Label + ", pressez la combinaison";
+                box.AccessibleDescription = g.Explanation;
+                string m0, k0;
+                box.Value = GlobalShortcut.Split(g.Value, out m0, out k0) ? g.Value : "";
+                panel.Controls.Add(label);
                 panel.Controls.Add(box);
-                rows[g] = Tuple.Create(cb, modList, keyList);
-                n++;
+                rows[g] = box;
             }
             var buttons = new FlowLayoutPanel { Dock = DockStyle.Bottom, FlowDirection = FlowDirection.RightToLeft, AutoSize = true, Padding = new Padding(8) };
             var cancel = Ui.MakeButton("Annuler", null); cancel.DialogResult = DialogResult.Cancel;
             var ok = Ui.MakeButton("Enre&gistrer", null);
             ok.Click += (s, e) => { if (Validate()) { DialogResult = DialogResult.OK; Close(); } };
             buttons.Controls.Add(cancel); buttons.Controls.Add(ok);
-            AcceptButton = ok; CancelButton = cancel;
+            CancelButton = cancel;
             Controls.Add(panel);
             Controls.Add(buttons);
-            Shown += (s, e) => rows[GlobalShortcut.Open].Item1.Focus();
+            Shown += (s, e) => rows[GlobalShortcut.Open].Focus();
         }
 
-        static string Mnemonic(string label, char c)
+        public string ValueOf(GlobalShortcut g) { return rows[g].Value; }
+
+        /// <summary>Appelé quand l'utilisateur a pressé une combinaison dans la zone d'un raccourci.</summary>
+        internal void Captured(CaptureBox box, string combo)
         {
-            int i = label.IndexOf(c);
-            if (i < 0) i = label.ToLower().IndexOf(c);
-            return i < 0 ? label : label.Substring(0, i) + "&" + label.Substring(i);
+            var g = box.Shortcut;
+            string mods, key;
+            if (!GlobalShortcut.Split(combo, out mods, out key))
+            {
+                Speech.Say(combo + " : combinaison non acceptée. Utilisez Ctrl+Alt, Ctrl+Maj, Ctrl+Alt+Maj, Alt+Maj ou Windows+Maj, puis une lettre, un chiffre ou une touche F1 à F12.");
+                return;
+            }
+            if (g.ForLauncher && !GlobalShortcut.LauncherModifiers.Contains(mods))
+            {
+                Speech.Say(combo + " : non acceptée pour lancer l'agenda. Windows n'accepte ici que Ctrl+Alt, Ctrl+Maj ou Ctrl+Alt+Maj.");
+                return;
+            }
+            foreach (var other in GlobalShortcut.All)
+                if (other != g && rows[other].Value == combo)
+                {
+                    Ui.Error(this, combo + " est déjà choisi pour « " + other.Label + " ». Pressez une autre combinaison.");
+                    box.Focus();
+                    return;
+                }
+            // Une combinaison déjà enregistrée par l'agenda lui-même est forcément libre pour lui.
+            bool ours = GlobalShortcut.All.Any(o => !o.ForLauncher && o.Value == combo);
+            if (!ours && !IsFree(combo))
+            {
+                Ui.Error(this, combo + " n'est pas disponible : un autre programme l'utilise déjà. Pressez une autre combinaison.");
+                box.Focus();
+                return;
+            }
+            box.Value = combo;
+            Speech.Say(combo + " : disponible, retenu pour « " + g.Label + " ». Activez Enregistrer pour valider.");
         }
 
-        static string DefaultKey(GlobalShortcut g)
+        internal void Cleared(CaptureBox box)
         {
-            return g == GlobalShortcut.Open ? "A" : g == GlobalShortcut.Next ? "P" : g == GlobalShortcut.Today ? "J" : "G";
+            box.Value = "";
+            Speech.Say("« " + box.Shortcut.Label + " » : désactivé.");
         }
 
-        public string ValueOf(GlobalShortcut g)
+        /// <summary>Essaie d'enregistrer la combinaison auprès de Windows, puis la libère aussitôt.</summary>
+        bool IsFree(string combo)
         {
-            var r = rows[g];
-            return r.Item1.Checked ? r.Item2.SelectedItem + "+" + r.Item3.SelectedItem : "";
+            uint mods, vk;
+            if (!GlobalShortcut.ToNative(combo, out mods, out vk)) return false;
+            const int testId = 0x7F00;
+            if (!Native.RegisterHotKey(Handle, testId, mods, vk)) return false;
+            Native.UnregisterHotKey(Handle, testId);
+            return true;
         }
 
         new bool Validate()
@@ -156,13 +181,68 @@ namespace AgendaAccessible
                 if (used.TryGetValue(v, out other))
                 {
                     Ui.Error(this, "La combinaison " + v + " est choisie deux fois : pour « " + other.Label + " » et pour « " + g.Label + " ». Choisissez-en une autre.");
-                    rows[g].Item3.Focus();
+                    rows[g].Focus();
                     return false;
                 }
                 used[v] = g;
             }
             return true;
         }
+    }
+
+    /// <summary>Zone qui capte une combinaison de touches au lieu de la taper comme du texte.</summary>
+    class CaptureBox : TextBox
+    {
+        [System.Runtime.InteropServices.DllImport("user32.dll")] static extern short GetKeyState(int vk);
+
+        readonly ShortcutsForm owner;
+        public readonly GlobalShortcut Shortcut;
+        string value = "";
+
+        public CaptureBox(ShortcutsForm owner, GlobalShortcut g)
+        {
+            this.owner = owner; Shortcut = g;
+            ReadOnly = true; ShortcutsEnabled = false; BackColor = SystemColors.Window;
+        }
+
+        public string Value
+        {
+            get { return value; }
+            set { this.value = value ?? ""; Text = this.value.Length == 0 ? "Désactivé" : this.value; }
+        }
+
+        static bool WinDown { get { return (GetKeyState(0x5B) & 0x8000) != 0 || (GetKeyState(0x5C) & 0x8000) != 0; } }
+
+        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+        {
+            Keys code = keyData & Keys.KeyCode, mods = keyData & Keys.Modifiers;
+            bool win = WinDown;
+            // Tab, Maj+Tab et Échap gardent leur rôle habituel.
+            if ((code == Keys.Tab && (mods == Keys.None || mods == Keys.Shift) && !win) || (code == Keys.Escape && mods == Keys.None))
+                return base.ProcessCmdKey(ref msg, keyData);
+            if ((code == Keys.Back || code == Keys.Delete) && mods == Keys.None && !win) { owner.Cleared(this); return true; }
+            if (code == Keys.ControlKey || code == Keys.ShiftKey || code == Keys.Menu || code == Keys.LWin || code == Keys.RWin)
+                return true; // on attend la touche principale
+            if (mods == Keys.None && !win) return base.ProcessCmdKey(ref msg, keyData); // flèches, etc. : lecture normale
+
+            string key;
+            if (code >= Keys.A && code <= Keys.Z) key = ((char)code).ToString();
+            else if (code >= Keys.D0 && code <= Keys.D9) key = ((int)(code - Keys.D0)).ToString();
+            else if (code >= Keys.NumPad0 && code <= Keys.NumPad9) key = ((int)(code - Keys.NumPad0)).ToString();
+            else if (code >= Keys.F1 && code <= Keys.F12) key = "F" + (code - Keys.F1 + 1);
+            else key = code.ToString();
+            var parts = new List<string>();
+            if (win) parts.Add("Windows");
+            if ((mods & Keys.Control) != 0) parts.Add("Ctrl");
+            if ((mods & Keys.Alt) != 0) parts.Add("Alt");
+            if ((mods & Keys.Shift) != 0) parts.Add("Maj");
+            owner.Captured(this, string.Join("+", parts) + "+" + key);
+            return true;
+        }
+
+        // Alt+lettre arrive comme touche système : on la capte aussi, au lieu d'ouvrir un menu.
+        protected override bool ProcessDialogChar(char charCode) { return Focused || base.ProcessDialogChar(charCode); }
+        protected override void OnKeyPress(KeyPressEventArgs e) { e.Handled = true; }
     }
 }
 
