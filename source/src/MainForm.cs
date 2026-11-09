@@ -144,11 +144,51 @@ namespace AgendaAccessible
         protected override void OnHandleCreated(EventArgs e)
         {
             base.OnHandleCreated(e);
-            // Ctrl+Alt+A, depuis n'importe quelle application : ouvrir l'agenda.
-            Native.RegisterHotKey(Handle, HotKeyId, 0x0001 | 0x0002 | 0x4000, (uint)Keys.A);
-            // Ctrl+Alt+P : dire le prochain rendez-vous ; Ctrl+Alt+J : dire les rendez-vous du jour.
-            Native.RegisterHotKey(Handle, HotKeyNext, 0x0001 | 0x0002 | 0x4000, (uint)Keys.P);
-            Native.RegisterHotKey(Handle, HotKeyToday, 0x0001 | 0x0002 | 0x4000, (uint)Keys.J);
+            RegisterHotkeys();
+        }
+
+        /// <summary>Enregistre les raccourcis globaux choisis dans Préférences (aucun par défaut).
+        /// Renvoie ceux que Windows a refusés (déjà pris par une autre application).</summary>
+        List<string> RegisterHotkeys()
+        {
+            var refused = new List<string>();
+            foreach (int id in new[] { HotKeyId, HotKeyNext, HotKeyToday }) Native.UnregisterHotKey(Handle, id);
+            var map = new[] { Tuple.Create(HotKeyId, GlobalShortcut.Open), Tuple.Create(HotKeyNext, GlobalShortcut.Next), Tuple.Create(HotKeyToday, GlobalShortcut.Today) };
+            foreach (var t in map)
+            {
+                uint mods, vk;
+                if (!GlobalShortcut.ToNative(t.Item2.Value, out mods, out vk)) continue;
+                if (!Native.RegisterHotKey(Handle, t.Item1, mods, vk)) refused.Add(t.Item2.Value + " (" + t.Item2.Label + ")");
+            }
+            return refused;
+        }
+
+        void EditShortcuts()
+        {
+            bool arrows;
+            using (var f = new ShortcutsForm())
+            {
+                if (f.ShowDialog(this) != DialogResult.OK) { days.Focus(); return; }
+                foreach (var g in GlobalShortcut.All) g.Value = f.ValueOf(g);
+                arrows = f.CtrlArrows;
+            }
+            Settings.Set("ctrl_fleches", arrows ? "1" : "0");
+            var refused = RegisterHotkeys();
+            if (Installer.IsInstalled) Installer.UpdateLaunchShortcut();
+            UpdateShortcutMenus();
+            days.Focus();
+            if (refused.Count > 0)
+                Ui.Error(this, "Windows a refusé ces raccourcis, sans doute déjà utilisés par une autre application :\r\n"
+                    + string.Join("\r\n", refused) + "\r\n\r\nChoisissez une autre combinaison dans Préférences, Raccourcis clavier.");
+            else SetStatus("Raccourcis clavier enregistrés.");
+        }
+
+        ToolStripMenuItem nextItem, todayItem;
+
+        void UpdateShortcutMenus()
+        {
+            if (nextItem != null) nextItem.ShortcutKeyDisplayString = GlobalShortcut.Next.MenuText;
+            if (todayItem != null) todayItem.ShortcutKeyDisplayString = GlobalShortcut.Today.MenuText;
         }
 
         protected override void OnHandleDestroyed(EventArgs e)
@@ -186,7 +226,7 @@ namespace AgendaAccessible
                 {
                     Settings.Set("info_fermeture", "1");
                     Ui.Info(this, "La fenêtre se ferme, mais l'agenda reste actif près de l'horloge pour faire sonner vos alarmes.\r\n\r\n"
-                        + "Pour le rouvrir : Ctrl+Alt+A, depuis n'importe où (ou son icône dans la zone de notification, Windows+B).\r\n"
+                        + "Pour le rouvrir : son icône dans la zone de notification (Windows+B), son raccourci du menu Démarrer, ou le raccourci global que vous pouvez choisir dans Préférences, Raccourcis clavier.\r\n"
                         + "Pour le quitter vraiment : menu Fichier, « Quitter complètement » (Ctrl+Q). Il n'y aura alors plus d'alarmes.\r\n\r\n"
                         + "Ce message ne s'affichera plus.");
                 }
@@ -509,10 +549,13 @@ namespace AgendaAccessible
                 new ToolStripSeparator(),
                 alarmsItem, speakAlarmsItem, summaryItem, autoStartItem,
                 new ToolStripSeparator(),
-                Item("&Dire le prochain rendez-vous", Keys.None, "Ctrl+Alt+P, partout", () => Speech.Say(monitor.NextEventSentence())),
-                Item("Dire les rendez-vous d'a&ujourd'hui", Keys.None, "Ctrl+Alt+J, partout", () => Speech.Say(monitor.TodaySentence())),
+                (nextItem = Item("&Dire le prochain rendez-vous", Keys.None, GlobalShortcut.Next.MenuText, () => Speech.Say(monitor.NextEventSentence()))),
+                (todayItem = Item("Dire les rendez-vous d'a&ujourd'hui", Keys.None, GlobalShortcut.Today.MenuText, () => Speech.Say(monitor.TodaySentence()))),
                 new ToolStripSeparator(),
                 Item("&Tester la sonnerie", Keys.None, null, () => TestRing())));
+
+            ms.Items.Add(MenuOf("&Préférences",
+                Item("&Raccourcis clavier…", Keys.None, null, () => EditShortcuts())));
 
             ms.Items.Add(MenuOf("A&genda",
                 Item("&Choisir l'agenda…", Keys.Control | Keys.G, null, () => ChooseCalendar()),
@@ -623,7 +666,7 @@ namespace AgendaAccessible
                     + "- Alarmes : 1 heure, 30 minutes, 15 minutes avant ou à l'heure exacte, dans la fiche de chaque rendez-vous.\r\n"
                     + "- Un résumé de la journée chaque matin.\r\n"
                     + "- L'agenda démarre avec Windows et reste actif près de l'horloge pour sonner.\r\n"
-                    + "- Depuis n'importe quelle application : Ctrl+Alt+A ouvre l'agenda, Ctrl+Alt+P dit le prochain rendez-vous, Ctrl+Alt+J ceux du jour.\r\n\r\n"
+                    + "- Menu Préférences, Raccourcis clavier : vous pouvez activer des raccourcis utilisables partout, pour faire dire le prochain rendez-vous ou ceux du jour par NVDA.\r\n\r\n"
                     + "F1 : aide complète. Ctrl+F1 : toutes les touches.");
             }
             await RefreshAll();
@@ -656,7 +699,7 @@ namespace AgendaAccessible
             if (Installer.IsInstalledCopy) { Ui.Info(this, "L'agenda est déjà installé sur cet ordinateur."); return; }
             var r = MessageBox.Show(this,
                 "Installer l'Agenda Google accessible sur cet ordinateur ?\r\n\r\n"
-                + "Il sera rangé dans vos programmes, avec un raccourci dans le menu Démarrer (touche Ctrl+Alt+G pour le lancer) et sur le Bureau, "
+                + "Il sera rangé dans vos programmes, avec un raccourci dans le menu Démarrer et sur le Bureau, "
                 + "il démarrera avec Windows et il se mettra à jour tout seul. Vous pourrez le désinstaller depuis les Paramètres de Windows, « Applications installées ».\r\n\r\n"
                 + "Oui : installer.  Non : continuer sans installer (vous pourrez le faire plus tard, menu Aide).",
                 "Installer l'agenda", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
@@ -669,7 +712,7 @@ namespace AgendaAccessible
             string err = Installer.Install(true);
             if (err != null) { Ui.Error(this, "L'installation n'a pas pu se faire : " + err); return; }
             Ui.Info(this, "L'agenda est installé. Il va redémarrer depuis son nouvel emplacement.\r\n\r\n"
-                + "Pour le lancer plus tard : Ctrl+Alt+G, ou « Agenda Google accessible » dans le menu Démarrer ou sur le Bureau.\r\n"
+                + "Pour le lancer plus tard : « Agenda Google accessible » dans le menu Démarrer ou sur le Bureau (une touche de lancement peut être choisie dans Préférences, Raccourcis clavier).\r\n"
                 + "Vous pouvez supprimer le fichier téléchargé.");
             try { System.Diagnostics.Process.Start(Installer.InstalledExe, "/apresinstallation"); } catch { }
             QuitApp();
@@ -1078,7 +1121,7 @@ namespace AgendaAccessible
 
         void OnApptsKeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Control && !e.Alt && !e.Shift)
+            if (e.Control && !e.Alt && !e.Shift && Settings.Get("ctrl_fleches", "1") == "1")
             {
                 TimeSpan? delta = null;
                 if (e.KeyCode == Keys.Right) delta = TimeSpan.FromDays(1);

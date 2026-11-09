@@ -169,7 +169,7 @@ namespace AgendaAccessible
                     }
                 }
                 // Un raccourci qui échoue (stratégie de l'entreprise, par exemple) n'empêche pas le reste de l'installation.
-                try { CreateShortcut(StartMenuShortcut, "Ctrl+Alt+G"); } catch { }
+                try { CreateShortcut(StartMenuShortcut, GlobalShortcut.ToLnk(GlobalShortcut.Launch.Value)); } catch { }
                 if (desktopShortcut) try { CreateShortcut(DesktopShortcut, null); } catch { }
                 using (var k = Microsoft.Win32.Registry.CurrentUser.CreateSubKey(UninstallKey))
                 {
@@ -187,6 +187,12 @@ namespace AgendaAccessible
                 return null;
             }
             catch (Exception ex) { return ex.Message; }
+        }
+
+        /// <summary>Recrée le raccourci du menu Démarrer avec la touche de lancement choisie (ou sans touche).</summary>
+        public static void UpdateLaunchShortcut()
+        {
+            try { CreateShortcut(StartMenuShortcut, GlobalShortcut.ToLnk(GlobalShortcut.Launch.Value)); } catch { }
         }
 
         /// <summary>Met à jour le numéro de version affiché dans « Applications installées ».</summary>
@@ -210,7 +216,7 @@ namespace AgendaAccessible
             lt.InvokeMember("TargetPath", BindingFlags.SetProperty, null, lnk, new object[] { InstalledExe });
             lt.InvokeMember("WorkingDirectory", BindingFlags.SetProperty, null, lnk, new object[] { InstallDir });
             lt.InvokeMember("Description", BindingFlags.SetProperty, null, lnk, new object[] { "Agenda Google accessible avec NVDA et JAWS" });
-            if (hotkey != null) try { lt.InvokeMember("Hotkey", BindingFlags.SetProperty, null, lnk, new object[] { hotkey }); } catch { }
+            if (!string.IsNullOrEmpty(hotkey)) try { lt.InvokeMember("Hotkey", BindingFlags.SetProperty, null, lnk, new object[] { hotkey }); } catch { }
             lt.InvokeMember("Save", BindingFlags.InvokeMethod, null, lnk, null);
         }
 

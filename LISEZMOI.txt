@@ -1,4 +1,4 @@
-﻿AGENDA GOOGLE ACCESSIBLE - Version 1.7
+﻿AGENDA GOOGLE ACCESSIBLE - Version 1.7.1
 Par Luc Rasschaert (Exatropic)
 
 Application Windows pour gérer votre agenda Google au clavier, avec NVDA ou JAWS :
@@ -10,14 +10,22 @@ Application Windows pour gérer votre agenda Google au clavier, avec NVDA ou JAW
 - créer un nouvel agenda (par exemple un agenda familial à partager).
 
 
+NOUVEAU EN VERSION 1.7.1
+
+- Menu Préférences, « Raccourcis clavier » : les raccourcis utilisables partout (afficher l'agenda,
+  dire le prochain rendez-vous, dire ceux du jour, lancer l'agenda) sont désactivés par défaut.
+  Pour chacun : une case pour l'activer, puis deux listes pour choisir les touches.
+- Une option coupe aussi Ctrl+Flèches dans la liste des rendez-vous.
+
+
 NOUVEAU EN VERSION 1.7
 
-- Installation : au premier lancement, l'agenda propose de s'installer (menu Démarrer avec Ctrl+Alt+G,
+- Installation : au premier lancement, l'agenda propose de s'installer (menu Démarrer,
   Bureau, démarrage avec Windows, désinstallation depuis « Applications installées »).
 - Mise à jour automatique : chaque jour, l'agenda vérifie s'il existe une nouvelle version sur GitHub,
   la propose, l'installe et redémarre tout seul. Menu Aide pour vérifier à la demande ou couper la vérification.
-- Depuis n'importe où : Ctrl+Alt+P fait dire le prochain rendez-vous par NVDA (ou JAWS, ou la voix de Windows),
-  Ctrl+Alt+J les rendez-vous du jour. Les alarmes sont aussi annoncées à la voix (menu Alarmes pour couper).
+- NVDA (ou JAWS, ou la voix de Windows) peut dire le prochain rendez-vous ou ceux du jour depuis n'importe où,
+  avec un raccourci à activer dans Préférences. Les alarmes sont aussi annoncées à la voix (menu Alarmes pour couper).
 - Saisie rapide (Ctrl+Maj+N) : « Dentiste mardi 14h30 Rennes » remplit la fiche ; vérifiez puis enregistrez.
 - Prochains rendez-vous (menu Édition) : demain (Ctrl+Maj+J), 7 jours (Ctrl+Maj+S), 30 jours (Ctrl+Maj+M),
   un mot dans les prochains rendez-vous (Ctrl+Maj+T).

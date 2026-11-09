@@ -468,13 +468,13 @@ Ctrl+L : liste des prochaines alarmes.
 « Alarmes par défaut de mes agendas » : les alarmes des rendez-vous qui gardent
 « Alarmes par défaut ». Elles sont enregistrées dans Google, donc aussi sur votre téléphone.
 Vous pouvez aussi couper les alarmes, le résumé du matin ou le démarrage avec Windows.
-Ctrl+Alt+A, depuis n'importe quelle application : ouvrir l'agenda.
-Ctrl+Alt+P, depuis n'importe où : NVDA (ou JAWS) dit le prochain rendez-vous.
-Ctrl+Alt+J, depuis n'importe où : les rendez-vous du jour.
+Raccourcis globaux (menu Préférences, Raccourcis clavier) : désactivés par défaut. Vous pouvez en activer
+pour afficher l'agenda, faire dire par NVDA (ou JAWS) le prochain rendez-vous ou ceux du jour,
+depuis n'importe quelle application, et choisir leurs touches.
 Les alarmes sont aussi annoncées à la voix (menu Alarmes pour le couper).
 
 8. Installation et mises à jour (menu Aide)
-Au premier lancement, l'agenda propose de s'installer : menu Démarrer (Ctrl+Alt+G pour le lancer),
+Au premier lancement, l'agenda propose de s'installer : menu Démarrer,
 Bureau, démarrage avec Windows, désinstallation depuis « Applications installées ».
 Il vérifie chaque jour s'il existe une nouvelle version et propose de l'installer ;
 il redémarre alors tout seul. « Rechercher les mises à jour » vérifie à la demande.
@@ -484,7 +484,7 @@ Le guide complet, avec la préparation de l'accès Google, est dans le fichier L
 
         /// <summary>Guide court fourni avec une version distribuée (sans les étapes Google Cloud).</summary>
         public const string UserGuide =
-@"AGENDA GOOGLE ACCESSIBLE - Version 1.7
+@"AGENDA GOOGLE ACCESSIBLE - Version 1.7.1
 Par Luc Rasschaert (Exatropic)
 
 Gérez votre agenda Google au clavier, avec NVDA ou JAWS : rendez-vous, alarmes,
@@ -495,7 +495,7 @@ résumé du matin, agendas partagés.
 
 Lancez AgendaGoogleAccessible.exe et répondez Oui quand il propose de s'installer.
 Il se range dans vos programmes, avec un raccourci dans le menu Démarrer et sur le Bureau,
-et Ctrl+Alt+G le lance. Rien d'autre à installer : Windows 10 et 11 ont déjà tout ce qu'il faut.
+et une touche de lancement peut être choisie dans Préférences. Rien d'autre à installer : Windows 10 et 11 ont déjà tout ce qu'il faut.
 Il se met ensuite à jour tout seul. Pour le désinstaller : Paramètres de Windows,
 « Applications installées », « Agenda Google accessible ».
 
@@ -527,8 +527,9 @@ Les fois suivantes, l'agenda se connecte tout seul.
   ou à l'heure exacte.
 - Chaque matin, un résumé annonce les rendez-vous du jour.
 - L'agenda démarre avec Windows et reste actif près de l'horloge pour sonner.
-  Alt+F4 ferme la fenêtre, Ctrl+Alt+A la rouvre, Ctrl+Q quitte vraiment.
-- Depuis n'importe où : Ctrl+Alt+P dit le prochain rendez-vous, Ctrl+Alt+J ceux du jour.
+  Alt+F4 ferme la fenêtre, Ctrl+Q quitte vraiment.
+- Menu Préférences, Raccourcis clavier : des touches utilisables partout pour rouvrir l'agenda
+  ou faire dire le prochain rendez-vous par NVDA. Elles sont désactivées au départ.
 - Ctrl+Maj+N : saisie rapide en une phrase, par exemple « Dentiste mardi 14h30 Rennes ».
 - Ctrl+Maj+S : les 7 prochains jours. Ctrl+Flèches : décaler un rendez-vous.
 - Le résumé du matin et les alarmes se ferment avec Échap ou Entrée.
@@ -560,10 +561,7 @@ Partout dans la fenêtre principale
   Ctrl+R .................. résumé du jour
   Ctrl+Q .................. quitter complètement (plus d'alarmes)
   Alt+F4 .................. fermer la fenêtre (les alarmes restent actives)
-  Ctrl+Alt+A .............. ouvrir l'agenda depuis n'importe quelle application
-  Ctrl+Alt+P .............. dire le prochain rendez-vous, depuis n'importe où
-  Ctrl+Alt+J .............. dire les rendez-vous du jour, depuis n'importe où
-  Ctrl+Alt+G .............. lancer l'agenda (raccourci du menu Démarrer, une fois installé)
+  Raccourcis globaux ....... à choisir dans Préférences, Raccourcis clavier (désactivés au départ)
   Ctrl+Maj+N .............. saisie rapide d'un rendez-vous en une phrase
   Ctrl+Maj+D .............. dupliquer le rendez-vous
   Ctrl+Maj+J .............. rendez-vous de demain
@@ -587,7 +585,7 @@ Liste des jours
   Entrée .................. aller aux rendez-vous du jour
 
 Liste des rendez-vous
-  Ctrl+Flèche droite/gauche  décaler d'un jour
+  Ctrl+Flèche droite/gauche  décaler d'un jour (option dans Préférences, Raccourcis clavier)
   Ctrl+Flèche bas/haut .... décaler d'une heure
   Entrée .................. lire le détail du rendez-vous
   Échap ................... revenir à la liste des jours

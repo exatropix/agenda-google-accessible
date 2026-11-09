@@ -14,7 +14,7 @@ Par Exatropic.
 - **Saisie rapide en une phrase** : « Dentiste mardi 14h30 Rennes » remplit la fiche tout seul.
 - **Rendez-vous qui se répètent** : tous les jours, du lundi au vendredi, toutes les semaines, tous les mois, tous les ans, ou « Anniversaire ».
 - **Alarmes** : 1 heure, 30 minutes, 15 minutes avant ou à l'heure exacte, avec sonnerie, fenêtre et annonce vocale. Elles sont enregistrées dans Google : le téléphone prévient aussi.
-- **NVDA parle sans ouvrir l'agenda** : Ctrl+Alt+P dit le prochain rendez-vous, Ctrl+Alt+J ceux du jour, depuis n'importe quelle application.
+- **NVDA parle sans ouvrir l'agenda** : des raccourcis utilisables partout, à activer et choisir dans Préférences, font dire le prochain rendez-vous ou ceux du jour.
 - **Résumé du matin** et **prochains rendez-vous** sur 1, 7 ou 30 jours.
 - **Invitations** : accepter, peut-être, refuser ; rejoindre une visioconférence Meet, Zoom ou Teams.
 - **Partage** : partager un agenda, s'abonner à un agenda partagé, créer un agenda.
@@ -38,7 +38,7 @@ Les versions et leurs nouveautés : [page des versions](https://github.com/exatr
 - Ctrl+G : tous les agendas ou un seul. Ctrl+F : rechercher. Ctrl+D : aller à une date. Ctrl+Origine : aujourd'hui.
 - Ctrl+Maj+J demain, Ctrl+Maj+S 7 jours, Ctrl+Maj+M 30 jours.
 - Ctrl+Maj+A / P / R : accepter, peut-être, refuser une invitation. Ctrl+Maj+V : rejoindre la visio.
-- Partout : Ctrl+Alt+A ouvrir l'agenda, Ctrl+Alt+P prochain rendez-vous, Ctrl+Alt+J rendez-vous du jour.
+- Raccourcis utilisables partout (ouvrir l'agenda, dire le prochain rendez-vous, ceux du jour) : à activer dans Préférences, Raccourcis clavier.
 - Alt+F4 ferme la fenêtre (les alarmes continuent), Ctrl+Q quitte vraiment.
 - F1 aide complète, Ctrl+F1 toutes les touches.
 
