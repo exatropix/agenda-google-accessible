@@ -154,6 +154,31 @@ namespace AgendaAccessible
     static class AutoStart
     {
         const string Key = @"Software\Microsoft\Windows\CurrentVersion\Run", Name = "AgendaGoogleAccessible";
+        /// <summary>Fait pointer le démarrage automatique vers ce programme (et l'active).</summary>
+        public static void SetPath(string exe)
+        {
+            using (var k = Microsoft.Win32.Registry.CurrentUser.CreateSubKey(Key))
+                k.SetValue(Name, "\"" + exe + "\" /demarrage");
+        }
+
+        /// <summary>Si le démarrage automatique lance une ancienne copie, on le redirige vers celle-ci.</summary>
+        public static void Refresh()
+        {
+            try
+            {
+                using (var k = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(Key))
+                {
+                    var v = k != null ? k.GetValue(Name) as string : null;
+                    if (v == null) return;
+                    if (v.IndexOf(Application.ExecutablePath, StringComparison.OrdinalIgnoreCase) >= 0) return;
+                    // Une copie installée a la priorité sur une copie lancée depuis un autre dossier.
+                    if (Installer.IsInstalled && !Installer.IsInstalledCopy) return;
+                }
+                SetPath(Application.ExecutablePath);
+            }
+            catch { }
+        }
+
         public static bool Enabled
         {
             get
@@ -165,7 +190,7 @@ namespace AgendaAccessible
             {
                 using (var k = Microsoft.Win32.Registry.CurrentUser.CreateSubKey(Key))
                 {
-                    if (value) k.SetValue(Name, "\"" + Application.ExecutablePath + "\" /demarrage");
+                    if (value) k.SetValue(Name, "\"" + (Installer.IsInstalled ? Installer.InstalledExe : Application.ExecutablePath) + "\" /demarrage");
                     else if (k.GetValue(Name) != null) k.DeleteValue(Name);
                 }
             }
@@ -225,6 +250,13 @@ namespace AgendaAccessible
                 if (ringing) { Ring.StartAlarm(); stopRing.Start(); } else Ring.Chime();
             };
             FormClosed += (s, e) => { stopRing.Stop(); if (ringing) Ring.Stop(); };
+        }
+
+        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+        {
+            // Échap ferme toujours, quel que soit l'élément qui a le clavier.
+            if (keyData == Keys.Escape) { Finish(DialogResult.OK); return true; }
+            return base.ProcessCmdKey(ref msg, keyData);
         }
 
         void Finish(DialogResult r)
@@ -296,7 +328,7 @@ namespace AgendaAccessible
         string firedDay;
         AlertForm openAlert;
 
-        public bool Enabled = true, SummaryEnabled = true;
+        public bool Enabled = true, SummaryEnabled = true, SpeakAlarms = true;
         public event Action Changed; // la liste des alarmes a changé (infobulle de la zone de notification)
 
         public AlarmMonitor(CalendarApi api, Func<List<CalendarInfo>> calendars, Func<bool> isConnected, Action<EventInfo> openEvent)
@@ -342,7 +374,7 @@ namespace AgendaAccessible
                 try
                 {
                     var list = new List<EventInfo>();
-                    DateTime from = DateTime.Today.AddDays(-1), to = DateTime.Today.AddDays(3);
+                    DateTime from = DateTime.Today.AddDays(-1), to = DateTime.Today.AddDays(8);
                     foreach (var cal in calendars().Where(c => c.AccessRole != "freeBusyReader"))
                     {
                         try
@@ -381,6 +413,37 @@ namespace AgendaAccessible
         public AlarmItem Next()
         {
             return Upcoming(DateTime.Now, DateTime.Now.AddDays(2)).FirstOrDefault();
+        }
+
+        public bool Loaded { get { return loadedOnce; } }
+
+        /// <summary>Phrase pour le raccourci Ctrl+Alt+P : le prochain rendez-vous avec une heure (ou de la journée).</summary>
+        public string NextEventSentence()
+        {
+            if (!loadedOnce) return "L'agenda est encore en train de charger vos rendez-vous. Réessayez dans un instant.";
+            var now = DateTime.Now;
+            var next = events.Where(e => !e.AllDay && e.End > now)
+                .GroupBy(e => (e.Calendar != null ? e.Calendar.Id : "") + e.Id + e.Start.Ticks).Select(g => g.First())
+                .OrderBy(e => e.Start).FirstOrDefault();
+            if (next == null) return "Aucun rendez-vous avec une heure dans les 7 prochains jours.";
+            string when = next.Start <= now ? "En cours depuis " + EventInfo.TimeText(next.Start)
+                : next.Start.Date == DateTime.Today ? "Aujourd'hui à " + EventInfo.TimeText(next.Start)
+                : next.Start.Date == DateTime.Today.AddDays(1) ? "Demain à " + EventInfo.TimeText(next.Start)
+                : EventInfo.DayText(next.Start, false) + " à " + EventInfo.TimeText(next.Start);
+            string s = "Prochain rendez-vous : " + EventText.Title(next) + ". " + when;
+            if (next.Start > now) s += ", " + AlarmText.Until(next.Start).ToLower(EventInfo.Fr);
+            if (!string.IsNullOrWhiteSpace(next.Location)) s += ". Lieu : " + next.Location.Trim();
+            return s + ".";
+        }
+
+        /// <summary>Phrase pour Ctrl+Alt+J : les rendez-vous du jour.</summary>
+        public string TodaySentence()
+        {
+            if (!loadedOnce) return "L'agenda est encore en train de charger vos rendez-vous.";
+            var list = EventsOn(DateTime.Today);
+            if (list.Count == 0) return "Aucun rendez-vous aujourd'hui.";
+            return "Aujourd'hui, " + EventText.Count(list.Count) + ". "
+                + string.Join(". ", list.Select(e => EventText.LineOnDay(e, DateTime.Today))) + ".";
         }
 
         public List<EventInfo> EventsOn(DateTime day)
@@ -431,6 +494,13 @@ namespace AgendaAccessible
             string title = "Alarme : " + EventText.Title(first) + " à " + EventInfo.TimeText(first.Start) + (due.Count > 1 ? " (et " + (due.Count - 1) + " autre" + (due.Count > 2 ? "s" : "") + ")" : "");
             var form = new AlertForm(title, sb.ToString().TrimEnd(), true);
             openAlert = form;
+            if (SpeakAlarms)
+            {
+                // Annonce vocale, en plus de la fenêtre : utile si l'on est dans une autre application.
+                var a0 = due.OrderBy(a => a.Event.Start).First().Event;
+                Speech.Say("Alarme. " + AlarmText.Until(a0.Start) + ", à " + EventInfo.TimeText(a0.Start) + " : " + EventText.Title(a0)
+                    + (string.IsNullOrWhiteSpace(a0.Location) ? "" : ", lieu : " + a0.Location.Trim()) + ".");
+            }
             form.FormClosed += (s, e) =>
             {
                 var r = form.DialogResult;

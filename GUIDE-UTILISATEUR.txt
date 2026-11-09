@@ -1,4 +1,4 @@
-﻿AGENDA GOOGLE ACCESSIBLE - Version 1.6.2
+﻿AGENDA GOOGLE ACCESSIBLE - Version 1.7
 Par Luc Rasschaert (Exatropic)
 
 Gérez votre agenda Google au clavier, avec NVDA ou JAWS : rendez-vous, alarmes,
@@ -7,10 +7,11 @@ résumé du matin, agendas partagés.
 
 1. INSTALLATION
 
-Décompressez ce dossier où vous voulez, par exemple dans Documents.
-Gardez les trois fichiers ensemble : AgendaGoogleAccessible.exe,
-AgendaGoogleAccessible.exe.config et agenda-identifiants.json.
-Rien d'autre à installer : Windows 10 et 11 ont déjà tout ce qu'il faut.
+Lancez AgendaGoogleAccessible.exe et répondez Oui quand il propose de s'installer.
+Il se range dans vos programmes, avec un raccourci dans le menu Démarrer et sur le Bureau,
+et Ctrl+Alt+G le lance. Rien d'autre à installer : Windows 10 et 11 ont déjà tout ce qu'il faut.
+Il se met ensuite à jour tout seul. Pour le désinstaller : Paramètres de Windows,
+« Applications installées », « Agenda Google accessible ».
 
 
 2. PREMIÈRE CONNEXION (une seule fois)
@@ -41,6 +42,9 @@ Les fois suivantes, l'agenda se connecte tout seul.
 - Chaque matin, un résumé annonce les rendez-vous du jour.
 - L'agenda démarre avec Windows et reste actif près de l'horloge pour sonner.
   Alt+F4 ferme la fenêtre, Ctrl+Alt+A la rouvre, Ctrl+Q quitte vraiment.
+- Depuis n'importe où : Ctrl+Alt+P dit le prochain rendez-vous, Ctrl+Alt+J ceux du jour.
+- Ctrl+Maj+N : saisie rapide en une phrase, par exemple « Dentiste mardi 14h30 Rennes ».
+- Ctrl+Maj+S : les 7 prochains jours. Ctrl+Flèches : décaler un rendez-vous.
 - Le résumé du matin et les alarmes se ferment avec Échap ou Entrée.
 - F1 : aide complète. Ctrl+F1 : toutes les touches.
 

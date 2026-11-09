@@ -36,11 +36,36 @@ namespace AgendaAccessible
         /// <summary>Choisit le fichier d'identifiants à utiliser, dans l'ordre :
         /// les identifiants personnels si l'utilisateur les a choisis, sinon ceux fournis avec l'application,
         /// sinon un fichier personnel trouvé à côté du programme ou dans le dossier de données.</summary>
+        /// <summary>Identifiants intégrés au programme lors de la publication (un seul fichier à distribuer).</summary>
+        public static string EmbeddedCredentialsPath { get { return Path.Combine(DataDir, "identifiants-application.json"); } }
+
+        public static bool HasEmbeddedCredentials
+        {
+            get { return System.Reflection.Assembly.GetExecutingAssembly().GetManifestResourceInfo(AppCredentialsName) != null; }
+        }
+
+        static string ExtractEmbeddedCredentials()
+        {
+            try
+            {
+                using (var res = System.Reflection.Assembly.GetExecutingAssembly().GetManifestResourceStream(AppCredentialsName))
+                {
+                    if (res == null) return null;
+                    Directory.CreateDirectory(DataDir);
+                    using (var f = File.Create(EmbeddedCredentialsPath)) res.CopyTo(f);
+                }
+                return EmbeddedCredentialsPath;
+            }
+            catch { return null; }
+        }
+
         public static string ResolveCredentials(out bool appProvided)
         {
             appProvided = false;
             if (Settings.Get("identifiants") == "perso" && File.Exists(CredentialsCopyPath)) return CredentialsCopyPath;
             if (File.Exists(AppCredentialsPath)) { appProvided = true; return AppCredentialsPath; }
+            string embedded = ExtractEmbeddedCredentials();
+            if (embedded != null) { appProvided = true; return embedded; }
             return FindCredentialsFile();
         }
         static string TokenPath { get { return Path.Combine(DataDir, "jeton.dat"); } }
@@ -78,7 +103,8 @@ namespace AgendaAccessible
             clientId = Json.Str(section, "client_id");
             clientSecret = Json.Str(section, "client_secret");
             if (string.IsNullOrEmpty(clientId)) return "Le fichier ne contient pas d'identifiant client (client_id).";
-            UsingAppCredentials = string.Equals(Path.GetFullPath(path), Path.GetFullPath(AppCredentialsPath), StringComparison.OrdinalIgnoreCase);
+            UsingAppCredentials = string.Equals(Path.GetFullPath(path), Path.GetFullPath(AppCredentialsPath), StringComparison.OrdinalIgnoreCase)
+                || string.Equals(Path.GetFullPath(path), Path.GetFullPath(EmbeddedCredentialsPath), StringComparison.OrdinalIgnoreCase);
             if (UsingAppCredentials) keepCopy = false;
             if (keepCopy)
             {

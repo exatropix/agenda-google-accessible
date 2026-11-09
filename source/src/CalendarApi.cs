@@ -90,6 +90,34 @@ namespace AgendaAccessible
         public string RecurringEventId; // non nul : cette occurrence fait partie d'une série
         public List<string> Recurrence; // règles de répétition à envoyer (nouveau rendez-vous)
         public string TimeZone; // fuseau horaire, obligatoire pour une série avec heure
+        public string SelfResponse; // ma réponse à l'invitation : needsAction, accepted, declined, tentative (null : pas invité)
+        public bool OrganizerIsSelf;
+        public string MeetLink; // lien de visioconférence (Google Meet, Zoom, Teams…)
+
+        /// <summary>Vrai si quelqu'un d'autre m'a invité à ce rendez-vous.</summary>
+        public bool IsInvitation { get { return SelfResponse != null && !OrganizerIsSelf; } }
+
+        public static string ResponseText(string r)
+        {
+            switch (r)
+            {
+                case "accepted": return "acceptée";
+                case "declined": return "refusée";
+                case "tentative": return "peut-être";
+                default: return "pas encore de réponse";
+            }
+        }
+
+        /// <summary>Copie modifiable (déplacement, duplication).</summary>
+        public EventInfo Clone()
+        {
+            var c = (EventInfo)MemberwiseClone();
+            c.Attendees = new List<string>(Attendees);
+            c.ReminderOverrides = new List<Reminder>(ReminderOverrides);
+            c.SendReminders = false;
+            c.Recurrence = null;
+            return c;
+        }
 
         /// <summary>Délais (minutes) des notifications réellement prévues pour ce rendez-vous.</summary>
         public List<int> PopupMinutes(CalendarInfo cal)
@@ -167,7 +195,18 @@ namespace AgendaAccessible
             foreach (var a in Json.Arr(e, "attendees"))
             {
                 string mail = Json.Str(a, "email");
+                if (Json.Bool(a, "self")) ev.SelfResponse = Json.Str(a, "responseStatus") ?? "needsAction";
                 if (!string.IsNullOrEmpty(mail) && !Json.Bool(a, "resource")) ev.Attendees.Add(mail);
+            }
+            ev.MeetLink = Json.Str(e, "hangoutLink");
+            if (ev.MeetLink == null)
+                foreach (var ep in Json.Arr(Json.Obj(e, "conferenceData"), "entryPoints"))
+                    if (Json.Str(ep, "entryPointType") == "video") { ev.MeetLink = Json.Str(ep, "uri"); break; }
+            if (ev.MeetLink == null)
+            {
+                var m = System.Text.RegularExpressions.Regex.Match((ev.Location ?? "") + " " + (ev.Description ?? ""),
+                    @"https://(meet\.google\.com|[\w.-]*zoom\.us|teams\.microsoft\.com|teams\.live\.com|whereby\.com|meet\.jit\.si)/[^\s""<>]+");
+                if (m.Success) ev.MeetLink = m.Value;
             }
             ev.RecurringEventId = Json.Str(e, "recurringEventId");
             var rem = Json.Obj(e, "reminders");
@@ -177,6 +216,7 @@ namespace AgendaAccessible
                 ev.ReminderOverrides = Reminder.Parse(Json.Arr(rem, "overrides"));
             }
             var org = Json.Obj(e, "organizer");
+            ev.OrganizerIsSelf = Json.Bool(org, "self");
             ev.Organizer = Json.Str(org, "displayName") ?? Json.Str(org, "email");
             return ev;
         }
@@ -380,6 +420,19 @@ namespace AgendaAccessible
         {
             string notify = (attendeesChanged || ev.Attendees.Count > 0) ? "all" : "none";
             return Send(new HttpMethod("PATCH"), "calendars/" + E(calendarId) + "/events/" + E(ev.Id) + "?sendUpdates=" + notify, EventBody(ev, attendeesChanged));
+        }
+
+        /// <summary>Répond à une invitation : accepted, declined ou tentative. L'organisateur est prévenu.</summary>
+        public async Task RespondInvitation(string calendarId, string eventId, string response)
+        {
+            var json = await Send(HttpMethod.Get, "calendars/" + E(calendarId) + "/events/" + E(eventId));
+            var attendees = Json.Arr(json, "attendees").ToList();
+            bool found = false;
+            foreach (var a in attendees)
+                if (Json.Bool(a, "self")) { a["responseStatus"] = response; found = true; }
+            if (!found) throw new ApiException(HttpStatusCode.BadRequest, "vous ne figurez pas parmi les invités de ce rendez-vous.");
+            await Send(new HttpMethod("PATCH"), "calendars/" + E(calendarId) + "/events/" + E(eventId) + "?sendUpdates=all",
+                new Dictionary<string, object> { { "attendees", attendees.Cast<object>().ToArray() } });
         }
 
         public Task DeleteEvent(string calendarId, string eventId, bool notify)

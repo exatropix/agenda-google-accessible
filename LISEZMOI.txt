@@ -1,4 +1,4 @@
-﻿AGENDA GOOGLE ACCESSIBLE - Version 1.6.2
+﻿AGENDA GOOGLE ACCESSIBLE - Version 1.7
 Par Luc Rasschaert (Exatropic)
 
 Application Windows pour gérer votre agenda Google au clavier, avec NVDA ou JAWS :
@@ -8,6 +8,24 @@ Application Windows pour gérer votre agenda Google au clavier, avec NVDA ou JAW
 - voir qui a accès à un agenda et retirer un accès ;
 - ajouter à votre liste un agenda qu'une autre personne vous a partagé ;
 - créer un nouvel agenda (par exemple un agenda familial à partager).
+
+
+NOUVEAU EN VERSION 1.7
+
+- Installation : au premier lancement, l'agenda propose de s'installer (menu Démarrer avec Ctrl+Alt+G,
+  Bureau, démarrage avec Windows, désinstallation depuis « Applications installées »).
+- Mise à jour automatique : chaque jour, l'agenda vérifie s'il existe une nouvelle version sur GitHub,
+  la propose, l'installe et redémarre tout seul. Menu Aide pour vérifier à la demande ou couper la vérification.
+- Depuis n'importe où : Ctrl+Alt+P fait dire le prochain rendez-vous par NVDA (ou JAWS, ou la voix de Windows),
+  Ctrl+Alt+J les rendez-vous du jour. Les alarmes sont aussi annoncées à la voix (menu Alarmes pour couper).
+- Saisie rapide (Ctrl+Maj+N) : « Dentiste mardi 14h30 Rennes » remplit la fiche ; vérifiez puis enregistrez.
+- Prochains rendez-vous (menu Édition) : demain (Ctrl+Maj+J), 7 jours (Ctrl+Maj+S), 30 jours (Ctrl+Maj+M),
+  un mot dans les prochains rendez-vous (Ctrl+Maj+T).
+- Invitations reçues : Ctrl+Maj+A accepter, Ctrl+Maj+P peut-être, Ctrl+Maj+R refuser.
+  Ctrl+Maj+V : rejoindre la visioconférence (Meet, Zoom, Teams).
+- Dans la liste des rendez-vous : Ctrl+Flèche droite ou gauche décale d'un jour, Ctrl+Flèche bas ou haut
+  d'une heure, Ctrl+Z annule. Ctrl+Maj+D duplique un rendez-vous.
+- Le résumé du matin et les alarmes se ferment toujours avec Échap.
 
 
 1. INSTALLATION

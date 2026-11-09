@@ -20,26 +20,46 @@ jobs:
       - uses: actions/checkout@v4
       - name: Installer Mono
         run: sudo apt-get update -qq && sudo apt-get install -y -qq mono-mcs mono-devel
-      - name: Compiler
-        run: sh source/build.sh
-      - name: Préparer le zip
+      - name: Préparer les identifiants Google et la voix NVDA
         env:
           # Identifiants Google de l'application (contenu du fichier JSON « application de bureau »),
           # rangés dans Settings > Secrets and variables > Actions, sous le nom GOOGLE_IDENTIFIANTS.
-          # Ils vont dans le zip téléchargeable, jamais dans le code source.
+          # Ils sont intégrés au programme, jamais au code source.
           IDENTIFIANTS: ${{ secrets.GOOGLE_IDENTIFIANTS }}
         run: |
           if [ -z "$IDENTIFIANTS" ]; then
             echo "::error::Le secret GOOGLE_IDENTIFIANTS est absent : sans lui, les utilisateurs devraient créer leur propre accès Google. Publication annulée."
             exit 1
           fi
+          printf '%s' "$IDENTIFIANTS" > source/agenda-identifiants.json
+          python3 -c "import json,sys; d=json.load(open('source/agenda-identifiants.json')); sys.exit(0 if d.get('installed',{}).get('client_id') else 1)" \
+            || { echo "::error::Le secret GOOGLE_IDENTIFIANTS n'est pas un fichier d'identifiants Google « application de bureau » valide."; exit 1; }
+          # Bibliothèque officielle de NVDA (« controller client », licence LGPL) : permet de faire parler NVDA.
+          mkdir -p source/lib nvda
+          for V in 2025.3.2 2025.3.1 2025.3 2025.2 2025.1.2 2025.1 2024.4.2 2024.4.1 2024.4; do
+            if curl -fsSL -o nvda/cc.zip "https://download.nvaccess.org/releases/$V/nvda_${V}_controllerClient.zip"; then echo "NVDA controller client $V"; break; fi
+          done
+          if [ -f nvda/cc.zip ]; then
+            unzip -qo nvda/cc.zip -d nvda/x
+            X86=$(find nvda/x -ipath '*x86*' -iname 'nvdaControllerClient*.dll' | head -1)
+            X64=$(find nvda/x -ipath '*x64*' -iname 'nvdaControllerClient*.dll' | head -1)
+            [ -z "$X86" ] && X86=$(find nvda/x -iname 'nvdaControllerClient32.dll' | head -1)
+            [ -z "$X64" ] && X64=$(find nvda/x -iname 'nvdaControllerClient64.dll' | head -1)
+            [ -n "$X86" ] && cp "$X86" source/lib/nvdaControllerClient32.dll
+            [ -n "$X64" ] && cp "$X64" source/lib/nvdaControllerClient64.dll
+            ls -la source/lib
+          else
+            echo "::warning::Bibliothèque NVDA introuvable : l'agenda parlera avec JAWS ou la voix de Windows."
+          fi
+      - name: Compiler
+        run: sh source/build.sh
+      - name: Préparer le zip
+        run: |
           mkdir -p paquet/AgendaGoogleAccessible
           cp source/out/AgendaGoogleAccessible.exe source/out/AgendaGoogleAccessible.exe.config paquet/AgendaGoogleAccessible/
           cp GUIDE-UTILISATEUR.txt paquet/AgendaGoogleAccessible/LISEZMOI.txt
-          printf '%s' "$IDENTIFIANTS" > paquet/AgendaGoogleAccessible/agenda-identifiants.json
-          python3 -c "import json,sys; d=json.load(open('paquet/AgendaGoogleAccessible/agenda-identifiants.json')); sys.exit(0 if d.get('installed',{}).get('client_id') else 1)" \
-            || { echo "::error::Le secret GOOGLE_IDENTIFIANTS n'est pas un fichier d'identifiants Google « application de bureau » valide."; exit 1; }
           cd paquet && zip -qr ../AgendaGoogleAccessible.zip AgendaGoogleAccessible
+          cd .. && cp source/out/AgendaGoogleAccessible.exe AgendaGoogleAccessible.exe
       - name: Publier
         env:
           GH_TOKEN: ${{ github.token }}
@@ -47,7 +67,7 @@ jobs:
           V="${{ inputs.version }}"
           NOTES="notes/v$V.md"
           if [ -f "$NOTES" ]; then
-            gh release create "v$V" AgendaGoogleAccessible.zip --target "$GITHUB_SHA" --title "Agenda Google accessible $V" --notes-file "$NOTES"
+            gh release create "v$V" AgendaGoogleAccessible.exe AgendaGoogleAccessible.zip --target "$GITHUB_SHA" --title "Agenda Google accessible $V" --notes-file "$NOTES"
           else
-            gh release create "v$V" AgendaGoogleAccessible.zip --target "$GITHUB_SHA" --title "Agenda Google accessible $V" --generate-notes
+            gh release create "v$V" AgendaGoogleAccessible.exe AgendaGoogleAccessible.zip --target "$GITHUB_SHA" --title "Agenda Google accessible $V" --generate-notes
           fi

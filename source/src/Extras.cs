@@ -318,6 +318,9 @@ namespace AgendaAccessible
         {
             string s = WhenOnDay(ev, day) + " : " + Title(ev);
             if (!string.IsNullOrWhiteSpace(ev.Location)) s += ", lieu : " + ev.Location.Trim();
+            if (ev.IsInvitation && (ev.SelfResponse == "needsAction" || ev.SelfResponse == "tentative"))
+                s += ev.SelfResponse == "tentative" ? ", invitation : peut-être" : ", invitation sans réponse";
+            if (ev.MeetLink != null) s += ", visio";
             return s;
         }
 
@@ -353,6 +356,8 @@ namespace AgendaAccessible
             if (!string.IsNullOrEmpty(ev.RecurringEventId)) sb.AppendLine("Répétition : ce rendez-vous fait partie d'une série qui se répète.");
             if (!string.IsNullOrWhiteSpace(ev.Organizer)) sb.AppendLine("Organisateur : " + ev.Organizer);
             if (ev.Attendees.Count > 0) sb.AppendLine("Invités : " + string.Join(", ", ev.Attendees));
+            if (ev.IsInvitation) sb.AppendLine("Votre réponse à l'invitation : " + EventInfo.ResponseText(ev.SelfResponse) + " (menu Rendez-vous, « Répondre à l'invitation »).");
+            if (ev.MeetLink != null) sb.AppendLine("Visioconférence : " + ev.MeetLink + " (Ctrl+Maj+V pour la rejoindre).");
             sb.AppendLine();
             if (string.IsNullOrWhiteSpace(ev.Description)) sb.AppendLine("Pas de description.");
             else
@@ -416,7 +421,18 @@ Pour un rendez-vous répété, Modifier ne change que cette date ;
 Supprimer demande s'il faut supprimer cette date ou toute la série.
 En vue « Tous mes agendas », le champ « Ranger dans l'agenda » (Alt+R) choisit l'agenda du nouveau rendez-vous.
 
+Saisie rapide (Ctrl+Maj+N) : écrivez le rendez-vous en une phrase, par exemple
+« Dentiste mardi 14h30 Rennes » ou « Réunion demain de 18h à 20h salle des fêtes ».
+La fiche s'ouvre déjà remplie : vérifiez-la, puis enregistrez.
+Dupliquer (Ctrl+Maj+D) : ouvre une copie du rendez-vous, à changer de date.
+Dans la liste des rendez-vous, Ctrl+Flèche droite ou gauche décale d'un jour,
+Ctrl+Flèche bas ou haut d'une heure ; Ctrl+Z annule le dernier déplacement.
+Invitations reçues : Ctrl+Maj+A accepter, Ctrl+Maj+P peut-être, Ctrl+Maj+R refuser.
+Ctrl+Maj+V : rejoindre la visioconférence (Google Meet, Zoom, Teams).
+
 4. Rechercher (menu Édition)
+Prochains rendez-vous : demain (Ctrl+Maj+J), les 7 prochains jours (Ctrl+Maj+S),
+les 30 prochains jours (Ctrl+Maj+M), ou un mot dans les prochains rendez-vous (Ctrl+Maj+T).
 Ctrl+F : rechercher un mot dans l'agenda affiché.
 Ctrl+Maj+F : rechercher dans tous vos agendas.
 La recherche couvre l'année passée et les deux années à venir.
@@ -453,13 +469,22 @@ Ctrl+L : liste des prochaines alarmes.
 « Alarmes par défaut ». Elles sont enregistrées dans Google, donc aussi sur votre téléphone.
 Vous pouvez aussi couper les alarmes, le résumé du matin ou le démarrage avec Windows.
 Ctrl+Alt+A, depuis n'importe quelle application : ouvrir l'agenda.
+Ctrl+Alt+P, depuis n'importe où : NVDA (ou JAWS) dit le prochain rendez-vous.
+Ctrl+Alt+J, depuis n'importe où : les rendez-vous du jour.
+Les alarmes sont aussi annoncées à la voix (menu Alarmes pour le couper).
+
+8. Installation et mises à jour (menu Aide)
+Au premier lancement, l'agenda propose de s'installer : menu Démarrer (Ctrl+Alt+G pour le lancer),
+Bureau, démarrage avec Windows, désinstallation depuis « Applications installées ».
+Il vérifie chaque jour s'il existe une nouvelle version et propose de l'installer ;
+il redémarre alors tout seul. « Rechercher les mises à jour » vérifie à la demande.
 
 La ligne d'état en bas de la fenêtre se lit avec NVDA+Fin (JAWS : Insert+Page suivante).
 Le guide complet, avec la préparation de l'accès Google, est dans le fichier LISEZMOI.txt.";
 
         /// <summary>Guide court fourni avec une version distribuée (sans les étapes Google Cloud).</summary>
         public const string UserGuide =
-@"AGENDA GOOGLE ACCESSIBLE - Version 1.6.2
+@"AGENDA GOOGLE ACCESSIBLE - Version 1.7
 Par Luc Rasschaert (Exatropic)
 
 Gérez votre agenda Google au clavier, avec NVDA ou JAWS : rendez-vous, alarmes,
@@ -468,10 +493,11 @@ résumé du matin, agendas partagés.
 
 1. INSTALLATION
 
-Décompressez ce dossier où vous voulez, par exemple dans Documents.
-Gardez les trois fichiers ensemble : AgendaGoogleAccessible.exe,
-AgendaGoogleAccessible.exe.config et agenda-identifiants.json.
-Rien d'autre à installer : Windows 10 et 11 ont déjà tout ce qu'il faut.
+Lancez AgendaGoogleAccessible.exe et répondez Oui quand il propose de s'installer.
+Il se range dans vos programmes, avec un raccourci dans le menu Démarrer et sur le Bureau,
+et Ctrl+Alt+G le lance. Rien d'autre à installer : Windows 10 et 11 ont déjà tout ce qu'il faut.
+Il se met ensuite à jour tout seul. Pour le désinstaller : Paramètres de Windows,
+« Applications installées », « Agenda Google accessible ».
 
 
 2. PREMIÈRE CONNEXION (une seule fois)
@@ -502,6 +528,9 @@ Les fois suivantes, l'agenda se connecte tout seul.
 - Chaque matin, un résumé annonce les rendez-vous du jour.
 - L'agenda démarre avec Windows et reste actif près de l'horloge pour sonner.
   Alt+F4 ferme la fenêtre, Ctrl+Alt+A la rouvre, Ctrl+Q quitte vraiment.
+- Depuis n'importe où : Ctrl+Alt+P dit le prochain rendez-vous, Ctrl+Alt+J ceux du jour.
+- Ctrl+Maj+N : saisie rapide en une phrase, par exemple « Dentiste mardi 14h30 Rennes ».
+- Ctrl+Maj+S : les 7 prochains jours. Ctrl+Flèches : décaler un rendez-vous.
 - Le résumé du matin et les alarmes se ferment avec Échap ou Entrée.
 - F1 : aide complète. Ctrl+F1 : toutes les touches.
 
@@ -532,6 +561,18 @@ Partout dans la fenêtre principale
   Ctrl+Q .................. quitter complètement (plus d'alarmes)
   Alt+F4 .................. fermer la fenêtre (les alarmes restent actives)
   Ctrl+Alt+A .............. ouvrir l'agenda depuis n'importe quelle application
+  Ctrl+Alt+P .............. dire le prochain rendez-vous, depuis n'importe où
+  Ctrl+Alt+J .............. dire les rendez-vous du jour, depuis n'importe où
+  Ctrl+Alt+G .............. lancer l'agenda (raccourci du menu Démarrer, une fois installé)
+  Ctrl+Maj+N .............. saisie rapide d'un rendez-vous en une phrase
+  Ctrl+Maj+D .............. dupliquer le rendez-vous
+  Ctrl+Maj+J .............. rendez-vous de demain
+  Ctrl+Maj+S .............. les 7 prochains jours
+  Ctrl+Maj+M .............. les 30 prochains jours
+  Ctrl+Maj+T .............. chercher un mot dans les prochains rendez-vous
+  Ctrl+Maj+A / P / R ...... invitation : accepter, peut-être, refuser
+  Ctrl+Maj+V .............. rejoindre la visioconférence
+  Ctrl+Z .................. annuler le dernier déplacement
   Ctrl+Origine ............ aujourd'hui
   Ctrl+D .................. aller à une date
   Ctrl+Page suivante ...... mois suivant
@@ -546,6 +587,8 @@ Liste des jours
   Entrée .................. aller aux rendez-vous du jour
 
 Liste des rendez-vous
+  Ctrl+Flèche droite/gauche  décaler d'un jour
+  Ctrl+Flèche bas/haut .... décaler d'une heure
   Entrée .................. lire le détail du rendez-vous
   Échap ................... revenir à la liste des jours
 

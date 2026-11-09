@@ -42,7 +42,8 @@ namespace AgendaAccessible
         public bool GuestsChanged { get; private set; }
 
         /// <param name="choices">Agendas proposés pour un nouveau rendez-vous (null : agenda imposé).</param>
-        public EventForm(CalendarInfo cal, EventInfo existing, DateTime defaultDay, bool readOnly, List<CalendarInfo> choices = null)
+        /// <param name="prefill">Nouveau rendez-vous déjà rempli (saisie rapide, copie).</param>
+        public EventForm(CalendarInfo cal, EventInfo existing, DateTime defaultDay, bool readOnly, List<CalendarInfo> choices = null, EventInfo prefill = null)
         {
             this.readOnly = readOnly;
             calendar = cal;
@@ -96,7 +97,13 @@ namespace AgendaAccessible
             alarmBoxes = new CheckBox[AlarmMinutes.Length];
             for (int i = 0; i < AlarmMinutes.Length; i++) alarmBoxes[i] = AddCheck(table, "Alarme " + AlarmLabels[i], ref tab);
 
-            if (isNew)
+            if (isNew && prefill != null)
+            {
+                existing = prefill;
+                existing.Id = null;
+                existing.RecurringEventId = null;
+            }
+            else if (isNew)
             {
                 DateTime start = defaultDay.Date == DateTime.Today
                     ? DateTime.Today.AddHours(Math.Min(DateTime.Now.Hour + 1, 23))

@@ -42,7 +42,7 @@ namespace AgendaAccessible
         readonly NotifyIcon tray;
         readonly bool startHidden;
         bool reallyQuit;
-        const int HotKeyId = 1;
+        const int HotKeyId = 1, HotKeyNext = 2, HotKeyToday = 3;
 
         List<CalendarInfo> calendarList = new List<CalendarInfo>();
         CalendarInfo current;
@@ -52,9 +52,16 @@ namespace AgendaAccessible
         CancellationTokenSource signInCancel;
         ListBox lastList;
 
-        public MainForm(bool startHidden)
+        readonly bool afterUpdate;
+        ToolStripMenuItem speakAlarmsItem, autoUpdateItem, installItem;
+        System.Windows.Forms.Timer updateTimer;
+        // Dernier déplacement au clavier, pour pouvoir l'annuler (Ctrl+Z).
+        EventInfo lastMoveBefore; CalendarInfo lastMoveCal;
+
+        public MainForm(bool startHidden, bool afterUpdate = false)
         {
             this.startHidden = startHidden;
+            this.afterUpdate = afterUpdate;
             http = new HttpClient { Timeout = TimeSpan.FromSeconds(60) };
             auth = new GoogleAuth(http);
             api = new CalendarApi(http, auth);
@@ -62,6 +69,7 @@ namespace AgendaAccessible
             monitor = new AlarmMonitor(api, () => calendarList, () => connected, ev => OpenFromAlert(ev));
             monitor.Enabled = Settings.Get("alarmes", "1") == "1";
             monitor.SummaryEnabled = Settings.Get("resume", "1") == "1";
+            monitor.SpeakAlarms = Settings.Get("alarmes_voix", "1") == "1";
             monitor.Changed += UpdateTrayText;
 
             Text = "Agenda Google accessible";
@@ -138,17 +146,24 @@ namespace AgendaAccessible
             base.OnHandleCreated(e);
             // Ctrl+Alt+A, depuis n'importe quelle application : ouvrir l'agenda.
             Native.RegisterHotKey(Handle, HotKeyId, 0x0001 | 0x0002 | 0x4000, (uint)Keys.A);
+            // Ctrl+Alt+P : dire le prochain rendez-vous ; Ctrl+Alt+J : dire les rendez-vous du jour.
+            Native.RegisterHotKey(Handle, HotKeyNext, 0x0001 | 0x0002 | 0x4000, (uint)Keys.P);
+            Native.RegisterHotKey(Handle, HotKeyToday, 0x0001 | 0x0002 | 0x4000, (uint)Keys.J);
         }
 
         protected override void OnHandleDestroyed(EventArgs e)
         {
             Native.UnregisterHotKey(Handle, HotKeyId);
+            Native.UnregisterHotKey(Handle, HotKeyNext);
+            Native.UnregisterHotKey(Handle, HotKeyToday);
             base.OnHandleDestroyed(e);
         }
 
         protected override void WndProc(ref Message m)
         {
             if (m.Msg == 0x0312 && m.WParam.ToInt32() == HotKeyId) { ShowMain(); return; }
+            if (m.Msg == 0x0312 && m.WParam.ToInt32() == HotKeyNext) { Speech.Say(monitor.NextEventSentence()); return; }
+            if (m.Msg == 0x0312 && m.WParam.ToInt32() == HotKeyToday) { Speech.Say(monitor.TodaySentence()); return; }
             base.WndProc(ref m);
         }
 
@@ -181,7 +196,7 @@ namespace AgendaAccessible
             if (signInCancel != null) signInCancel.Cancel();
         }
 
-        void QuitApp()
+        public void QuitApp()
         {
             reallyQuit = true;
             Close();
@@ -440,14 +455,35 @@ namespace AgendaAccessible
                 Item("&Quitter complètement", Keys.Control | Keys.Q, null, () => QuitApp())));
 
             ms.Items.Add(MenuOf("É&dition",
+                MenuOf("&Prochains rendez-vous",
+                    Item("&Demain", Keys.Control | Keys.Shift | Keys.J, null, () => ShowRange(1, 1, null)),
+                    Item("Les &7 prochains jours", Keys.Control | Keys.Shift | Keys.S, null, () => ShowRange(0, 7, null)),
+                    Item("Les &30 prochains jours", Keys.Control | Keys.Shift | Keys.M, null, () => ShowRange(0, 30, null)),
+                    Item("&Chercher un mot dans les prochains rendez-vous…", Keys.Control | Keys.Shift | Keys.T, null, () => SearchUpcoming())),
+                new ToolStripSeparator(),
                 Item("&Rechercher dans cet agenda…", Keys.Control | Keys.F, null, () => Search(false)),
                 Item("Rechercher dans &tous les agendas…", Keys.Control | Keys.Shift | Keys.F, null, () => Search(true))));
 
             ms.Items.Add(MenuOf("&Rendez-vous",
                 Item("&Nouveau rendez-vous…", Keys.Control | Keys.N, null, () => NewEvent()),
+                Item("Saisie ra&pide…", Keys.Control | Keys.Shift | Keys.N, null, () => QuickNewEvent()),
                 Item("&Voir le détail", Keys.None, "Entrée", () => ShowDetail()),
                 Item("&Modifier le rendez-vous…", Keys.Control | Keys.M, null, () => EditEvent(null)),
-                Item("&Supprimer le rendez-vous…", Keys.Control | Keys.S, "Suppr ou Ctrl+S", () => DeleteEvent(null))));
+                Item("&Supprimer le rendez-vous…", Keys.Control | Keys.S, "Suppr ou Ctrl+S", () => DeleteEvent(null)),
+                Item("D&upliquer le rendez-vous…", Keys.Control | Keys.Shift | Keys.D, null, () => DuplicateEvent()),
+                new ToolStripSeparator(),
+                MenuOf("Dé&placer le rendez-vous",
+                    Item("Au jour &suivant", Keys.None, "Ctrl+Flèche droite", () => MoveSelected(TimeSpan.FromDays(1))),
+                    Item("Au jour &précédent", Keys.None, "Ctrl+Flèche gauche", () => MoveSelected(TimeSpan.FromDays(-1))),
+                    Item("Une heure plus &tard", Keys.None, "Ctrl+Flèche bas", () => MoveSelected(TimeSpan.FromHours(1))),
+                    Item("Une heure plus tô&t", Keys.None, "Ctrl+Flèche haut", () => MoveSelected(TimeSpan.FromHours(-1))),
+                    Item("&Annuler le dernier déplacement", Keys.Control | Keys.Z, null, () => UndoMove())),
+                new ToolStripSeparator(),
+                MenuOf("&Répondre à l'invitation",
+                    Item("&Accepter", Keys.Control | Keys.Shift | Keys.A, null, () => Respond("accepted")),
+                    Item("&Peut-être", Keys.Control | Keys.Shift | Keys.P, null, () => Respond("tentative")),
+                    Item("&Refuser", Keys.Control | Keys.Shift | Keys.R, null, () => Respond("declined"))),
+                Item("Re&joindre la visioconférence", Keys.Control | Keys.Shift | Keys.V, null, () => JoinMeeting())));
 
             ms.Items.Add(MenuOf("&Affichage",
                 Item("&Aujourd'hui", Keys.Control | Keys.Home, "Ctrl+Origine", async () => await GoToDay(DateTime.Today, false)),
@@ -463,13 +499,18 @@ namespace AgendaAccessible
             summaryItem = Item("Résumé du &matin", Keys.None, null, () => ToggleSummary());
             summaryItem.Checked = monitor.SummaryEnabled;
             autoStartItem = Item("Démarrer avec &Windows", Keys.None, null, () => ToggleAutoStart());
+            speakAlarmsItem = Item("A&nnoncer les alarmes à la voix", Keys.None, null, () => ToggleSpeakAlarms());
+            speakAlarmsItem.Checked = monitor.SpeakAlarms;
             autoStartItem.Checked = AutoStart.Enabled;
             ms.Items.Add(MenuOf("A&larmes",
                 Item("&Prochaines alarmes…", Keys.Control | Keys.L, null, () => ShowUpcoming()),
                 Item("&Résumé du jour", Keys.Control | Keys.R, null, () => monitor.ShowSummary()),
                 Item("Alarmes par &défaut de mes agendas…", Keys.None, null, () => EditDefaultAlarms()),
                 new ToolStripSeparator(),
-                alarmsItem, summaryItem, autoStartItem,
+                alarmsItem, speakAlarmsItem, summaryItem, autoStartItem,
+                new ToolStripSeparator(),
+                Item("&Dire le prochain rendez-vous", Keys.None, "Ctrl+Alt+P, partout", () => Speech.Say(monitor.NextEventSentence())),
+                Item("Dire les rendez-vous d'a&ujourd'hui", Keys.None, "Ctrl+Alt+J, partout", () => Speech.Say(monitor.TodaySentence())),
                 new ToolStripSeparator(),
                 Item("&Tester la sonnerie", Keys.None, null, () => TestRing())));
 
@@ -486,7 +527,14 @@ namespace AgendaAccessible
                 Item("&Aide générale", Keys.F1, null, () => ShowText("Aide", HelpText.General)),
                 Item("&Touches de raccourci", Keys.Control | Keys.F1, null, () => ShowText("Touches de raccourci", HelpText.Shortcuts)),
                 new ToolStripSeparator(),
-                Item("À &propos", Keys.None, null, () => Ui.Info(this, "Agenda Google accessible, version 1.6.2\r\nPar Luc Rasschaert (Exatropic).\r\n\r\nGestion de vos agendas Google au clavier, avec NVDA ou JAWS."))));
+                Item("Rechercher les &mises à jour…", Keys.None, null, () => CheckUpdates(true)),
+                (autoUpdateItem = Item("&Vérifier les mises à jour automatiquement", Keys.None, null, () => ToggleAutoUpdate())),
+                (installItem = Item("&Installer sur cet ordinateur…", Keys.None, null, () => OfferInstall(true))),
+                Item("&Désinstaller…", Keys.None, null, () => UninstallFromMenu()),
+                new ToolStripSeparator(),
+                Item("À &propos", Keys.None, null, () => Ui.Info(this, "Agenda Google accessible, version " + AppInfo.VersionText + "\r\nPar Luc Rasschaert (Exatropic).\r\n\r\nGestion de vos agendas Google au clavier, avec NVDA ou JAWS."))));
+            autoUpdateItem.Checked = Updater.AutoCheck;
+            installItem.Visible = !Installer.IsInstalledCopy;
             return ms;
         }
 
@@ -570,14 +618,130 @@ namespace AgendaAccessible
                 Settings.Set("v13", "1");
                 Settings.Set("agenda", "*");
                 try { AutoStart.Enabled = true; autoStartItem.Checked = true; } catch { }
-                Ui.Info(this, "Nouveau dans la version 1.3 :\r\n\r\n"
-                    + "- L'agenda affiche maintenant tous vos agendas ensemble (Ctrl+G pour n'en voir qu'un).\r\n"
-                    + "- Alarmes : 1 heure, 30 minutes, 15 minutes avant ou à l'heure exacte, dans la fiche de chaque rendez-vous, avec des alarmes par défaut (menu Alarmes).\r\n"
+                Ui.Info(this, "Bienvenue dans l'Agenda Google accessible !\r\n\r\n"
+                    + "- Tous vos agendas sont affichés ensemble (Ctrl+G pour n'en voir qu'un).\r\n"
+                    + "- Alarmes : 1 heure, 30 minutes, 15 minutes avant ou à l'heure exacte, dans la fiche de chaque rendez-vous.\r\n"
                     + "- Un résumé de la journée chaque matin.\r\n"
-                    + "- L'agenda démarre avec Windows et reste actif près de l'horloge pour sonner. Ctrl+Alt+A l'ouvre depuis n'importe où.\r\n\r\n"
-                    + "Tout se règle dans le menu Alarmes (Alt+L).");
+                    + "- L'agenda démarre avec Windows et reste actif près de l'horloge pour sonner.\r\n"
+                    + "- Depuis n'importe quelle application : Ctrl+Alt+A ouvre l'agenda, Ctrl+Alt+P dit le prochain rendez-vous, Ctrl+Alt+J ceux du jour.\r\n\r\n"
+                    + "F1 : aide complète. Ctrl+F1 : toutes les touches.");
             }
             await RefreshAll();
+            AfterStartup();
+        }
+
+        // ================= Installation et mises à jour =================
+
+        void AfterStartup()
+        {
+            AutoStart.Refresh();
+            if (Installer.IsInstalledCopy) Installer.RefreshVersionInfo();
+            if (afterUpdate)
+            {
+                string msg = "Mise à jour installée : version " + AppInfo.VersionText + ".";
+                SetStatus(msg);
+                Speech.Say(msg);
+            }
+            else if (!startHidden && !Installer.IsInstalledCopy && !Installer.IsInstalled && Settings.Get("installation_refusee") != "1")
+                OfferInstall(false);
+            updateTimer = new System.Windows.Forms.Timer { Interval = 3 * 3600 * 1000 };
+            updateTimer.Tick += (s, e) => CheckUpdates(false);
+            updateTimer.Start();
+            CheckUpdates(false);
+        }
+
+        /// <summary>Propose d'installer l'agenda (dossier du programme, menu Démarrer, Bureau, désinstallation).</summary>
+        void OfferInstall(bool fromMenu)
+        {
+            if (Installer.IsInstalledCopy) { Ui.Info(this, "L'agenda est déjà installé sur cet ordinateur."); return; }
+            var r = MessageBox.Show(this,
+                "Installer l'Agenda Google accessible sur cet ordinateur ?\r\n\r\n"
+                + "Il sera rangé dans vos programmes, avec un raccourci dans le menu Démarrer (touche Ctrl+Alt+G pour le lancer) et sur le Bureau, "
+                + "il démarrera avec Windows et il se mettra à jour tout seul. Vous pourrez le désinstaller depuis les Paramètres de Windows, « Applications installées ».\r\n\r\n"
+                + "Oui : installer.  Non : continuer sans installer (vous pourrez le faire plus tard, menu Aide).",
+                "Installer l'agenda", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            if (r != DialogResult.Yes)
+            {
+                if (!fromMenu) Settings.Set("installation_refusee", "1");
+                days.Focus();
+                return;
+            }
+            string err = Installer.Install(true);
+            if (err != null) { Ui.Error(this, "L'installation n'a pas pu se faire : " + err); return; }
+            Ui.Info(this, "L'agenda est installé. Il va redémarrer depuis son nouvel emplacement.\r\n\r\n"
+                + "Pour le lancer plus tard : Ctrl+Alt+G, ou « Agenda Google accessible » dans le menu Démarrer ou sur le Bureau.\r\n"
+                + "Vous pouvez supprimer le fichier téléchargé.");
+            try { System.Diagnostics.Process.Start(Installer.InstalledExe, "/apresinstallation"); } catch { }
+            QuitApp();
+        }
+
+        void UninstallFromMenu()
+        {
+            if (!Installer.IsInstalled)
+            {
+                Ui.Info(this, "L'agenda n'est pas installé : il suffit de supprimer son dossier. Vos rendez-vous restent dans votre agenda Google.");
+                return;
+            }
+            try { System.Diagnostics.Process.Start(Installer.InstalledExe, "/desinstaller"); } catch (Exception ex) { Ui.Error(this, ex.Message); }
+        }
+
+        void ToggleAutoUpdate()
+        {
+            Updater.AutoCheck = !Updater.AutoCheck;
+            autoUpdateItem.Checked = Updater.AutoCheck;
+            SetStatus(Updater.AutoCheck ? "Mises à jour vérifiées automatiquement." : "Vérification automatique des mises à jour désactivée.");
+        }
+
+        bool checkingUpdate;
+
+        /// <summary>Cherche une nouvelle version sur GitHub (une fois par jour au plus, sauf demande manuelle).</summary>
+        async void CheckUpdates(bool manual)
+        {
+            if (checkingUpdate) return;
+            string today = DateTime.Today.ToString("yyyyMMdd");
+            if (!manual && (!Updater.AutoCheck || Settings.Get("maj_derniere") == today)) return;
+            checkingUpdate = true;
+            try
+            {
+                if (manual) SetStatus("Recherche des mises à jour…");
+                UpdateInfo info;
+                try { info = await Updater.Check(); }
+                catch (Exception ex)
+                {
+                    if (manual) Ui.Error(this, "Impossible de vérifier les mises à jour : " + ex.Message);
+                    return;
+                }
+                Settings.Set("maj_derniere", today);
+                if (info == null)
+                {
+                    if (manual) Ui.Info(this, "Vous avez la dernière version (" + AppInfo.VersionText + ").");
+                    return;
+                }
+                if (!manual && Settings.Get("maj_ignoree") == info.Tag) return;
+                if (!Visible) ShowMain();
+                string notes = info.Notes.Length > 1500 ? info.Notes.Substring(0, 1500) + "…" : info.Notes;
+                var r = MessageBox.Show(this,
+                    "Une nouvelle version de l'agenda est disponible : " + info.Version.ToString(3) + " (vous avez la " + AppInfo.VersionText + ").\r\n\r\n"
+                    + notes.Replace("**", "") + "\r\n\r\n"
+                    + "Oui : installer maintenant (l'agenda redémarre tout seul).\r\nNon : pas maintenant.\r\nAnnuler : ne plus proposer cette version.",
+                    "Mise à jour disponible", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Information);
+                if (r == DialogResult.Cancel) { Settings.Set("maj_ignoree", info.Tag); return; }
+                if (r != DialogResult.Yes) return;
+                SetStatus("Téléchargement de la version " + info.Version.ToString(3) + "…");
+                Speech.Say("Téléchargement de la mise à jour.");
+                try { await Updater.Install(info); }
+                catch (Exception ex) { Ui.Error(this, "La mise à jour n'a pas pu être téléchargée : " + ex.Message); return; }
+                QuitApp();
+            }
+            finally { checkingUpdate = false; }
+        }
+
+        void ToggleSpeakAlarms()
+        {
+            monitor.SpeakAlarms = !monitor.SpeakAlarms;
+            speakAlarmsItem.Checked = monitor.SpeakAlarms;
+            Settings.Set("alarmes_voix", monitor.SpeakAlarms ? "1" : "0");
+            SetStatus(monitor.SpeakAlarms ? "Les alarmes seront aussi annoncées à la voix." : "Les alarmes ne seront plus annoncées à la voix.");
         }
 
         /// <summary>Demande l'ID client et le code secret, puis les enregistre comme un fichier JSON Google classique.</summary>
@@ -914,6 +1078,15 @@ namespace AgendaAccessible
 
         void OnApptsKeyDown(object sender, KeyEventArgs e)
         {
+            if (e.Control && !e.Alt && !e.Shift)
+            {
+                TimeSpan? delta = null;
+                if (e.KeyCode == Keys.Right) delta = TimeSpan.FromDays(1);
+                else if (e.KeyCode == Keys.Left) delta = TimeSpan.FromDays(-1);
+                else if (e.KeyCode == Keys.Down) delta = TimeSpan.FromHours(1);
+                else if (e.KeyCode == Keys.Up) delta = TimeSpan.FromHours(-1);
+                if (delta != null) { e.Handled = true; e.SuppressKeyPress = true; MoveSelected(delta.Value); return; }
+            }
             if (e.Control || e.Alt) return;
             if (e.KeyCode == Keys.Enter) { e.Handled = true; e.SuppressKeyPress = true; ShowDetail(); }
             else if (e.KeyCode == Keys.Delete) { e.Handled = true; DeleteEvent(null); }
@@ -967,7 +1140,7 @@ namespace AgendaAccessible
             else appts.Focus();
         }
 
-        void NewEvent()
+        void NewEvent(EventInfo prefill = null)
         {
             var cal = current;
             if (cal == null) return;
@@ -976,11 +1149,12 @@ namespace AgendaAccessible
             {
                 choices = calendarList.Where(c => c.CanEdit).ToList();
                 if (choices.Count == 0) { Ui.Error(this, "Aucun de vos agendas ne permet d'ajouter des rendez-vous."); return; }
-                cal = choices.FirstOrDefault(c => c.Id == Settings.Get("agenda_nouveau")) ?? choices.FirstOrDefault(c => c.Primary) ?? choices[0];
+                cal = (prefill != null && prefill.Calendar != null ? choices.FirstOrDefault(c => c.Id == prefill.Calendar.Id) : null)
+                    ?? choices.FirstOrDefault(c => c.Id == Settings.Get("agenda_nouveau")) ?? choices.FirstOrDefault(c => c.Primary) ?? choices[0];
             }
             else if (!cal.CanEdit) { Ui.Error(this, "L'agenda « " + cal.Name + " » est en lecture seule : vous ne pouvez pas y ajouter de rendez-vous."); return; }
             var back = ActiveControl;
-            using (var f = new EventForm(cal, null, SelectedDay, false, choices))
+            using (var f = new EventForm(cal, null, prefill != null ? prefill.Start : SelectedDay, false, choices, prefill))
             {
                 if (f.ShowDialog(this) != DialogResult.OK) { if (back != null) back.Focus(); return; }
                 var ev = f.Result;
@@ -1053,6 +1227,185 @@ namespace AgendaAccessible
                 appts.Focus();
                 await monitor.RefreshNow();
             }
+            appts.Focus();
+        }
+
+        // ================= Saisie rapide, copie, déplacement =================
+
+        void QuickNewEvent()
+        {
+            if (current == null) return;
+            string text;
+            using (var d = new InputDialog("Saisie rapide",
+                "Écrivez le rendez-vous en une phrase : le titre, puis le jour, l'heure et le lieu. Exemples :\r\n"
+                + "« Dentiste mardi 14h30 Rennes », « Réunion demain de 18h à 20h salle des fêtes », « Anniversaire de Paul 12 mars ».\r\n"
+                + "La fiche du rendez-vous s'ouvre ensuite déjà remplie : vérifiez-la, puis enregistrez.",
+                "&Rendez-vous :", ""))
+            {
+                if (d.ShowDialog(this) != DialogResult.OK || d.Value.Trim().Length == 0) { days.Focus(); return; }
+                text = d.Value;
+            }
+            var r = QuickEntry.Parse(text, DateTime.Now);
+            SetStatus("Compris : " + r.Summary);
+            NewEvent(r.Event);
+        }
+
+        void DuplicateEvent()
+        {
+            if (current == null) return;
+            var ev = PickEvent("dupliquer");
+            if (ev == null) return;
+            var copy = ev.Clone();
+            copy.Id = null;
+            copy.RecurringEventId = null;
+            copy.Calendar = CalOf(ev);
+            NewEvent(copy);
+        }
+
+        EventInfo SelectedForAction(string verb)
+        {
+            if (lastList == appts)
+            {
+                var a = appts.SelectedItem as ApptItem;
+                return a != null ? a.Event : null;
+            }
+            return PickEvent(verb);
+        }
+
+        /// <summary>Décale le rendez-vous sélectionné d'un jour ou d'une heure (Ctrl+flèches), sans ouvrir la fiche.</summary>
+        async void MoveSelected(TimeSpan delta)
+        {
+            if (current == null || loading) return;
+            var ev = SelectedForAction("déplacer");
+            if (ev == null) return;
+            var cal = CalOf(ev);
+            if (!cal.CanEdit) { Ui.Error(this, "L'agenda « " + cal.Name + " » est en lecture seule : ce rendez-vous ne peut pas être déplacé."); return; }
+            if (ev.AllDay && delta.TotalDays != Math.Round(delta.TotalDays))
+            {
+                Speech.Say("Rendez-vous sur toute la journée : on ne peut le décaler que d'un jour, avec Ctrl+flèche droite ou gauche.");
+                return;
+            }
+            var moved = ev.Clone();
+            moved.Start = ev.Start + delta;
+            moved.End = ev.End + delta;
+            bool ok = await Guard(async () => await api.UpdateEvent(cal.Id, moved, false));
+            if (!ok) { appts.Focus(); return; }
+            lastMoveBefore = ev.Clone();
+            lastMoveCal = cal;
+            await LoadMonth(moved.Start, e => e.Id == moved.Id);
+            appts.Focus();
+            string said = "Déplacé : " + EventText.LineOnDay(moved, moved.Start.Date) + ", " + EventInfo.DayText(moved.Start, false).ToLower(EventInfo.Fr) + ". Ctrl+Z pour annuler.";
+            SetStatus(said);
+            Speech.Say(said);
+            await monitor.RefreshNow();
+        }
+
+        async void UndoMove()
+        {
+            if (lastMoveBefore == null) { Speech.Say("Aucun déplacement à annuler."); return; }
+            var before = lastMoveBefore;
+            var cal = lastMoveCal;
+            lastMoveBefore = null;
+            bool ok = await Guard(async () => await api.UpdateEvent(cal.Id, before, false));
+            if (!ok) return;
+            await LoadMonth(before.Start, e => e.Id == before.Id);
+            appts.Focus();
+            string said = "Déplacement annulé : " + EventText.LineOnDay(before, before.Start.Date) + ".";
+            SetStatus(said);
+            Speech.Say(said);
+            await monitor.RefreshNow();
+        }
+
+        // ================= Invitations et visioconférence =================
+
+        async void Respond(string response)
+        {
+            if (current == null) return;
+            var ev = SelectedForAction("répondre");
+            if (ev == null) return;
+            if (!ev.IsInvitation) { Ui.Info(this, "Ce rendez-vous n'est pas une invitation reçue : il n'y a pas de réponse à donner."); return; }
+            var cal = CalOf(ev);
+            bool ok = await Guard(async () => await api.RespondInvitation(cal.Id, ev.Id, response));
+            if (!ok) { appts.Focus(); return; }
+            await LoadMonth(ev.Start, e => e.Id == ev.Id);
+            appts.Focus();
+            string said = "Réponse envoyée : " + EventInfo.ResponseText(response) + ", pour « " + EventText.Title(ev) + " ».";
+            SetStatus(said);
+            Speech.Say(said);
+            await monitor.RefreshNow();
+        }
+
+        void JoinMeeting()
+        {
+            if (current == null) return;
+            var ev = SelectedForAction("rejoindre");
+            if (ev == null) return;
+            Uri link;
+            if (ev.MeetLink == null || !Uri.TryCreate(ev.MeetLink, UriKind.Absolute, out link) || link.Scheme != Uri.UriSchemeHttps)
+            { Ui.Info(this, "Ce rendez-vous n'a pas de lien de visioconférence utilisable."); return; }
+            if (!Ui.Confirm(this, "Ouvrir la visioconférence de « " + EventText.Title(ev) + " » dans votre navigateur ?\r\n\r\n" + ev.MeetLink)) { appts.Focus(); return; }
+            try { System.Diagnostics.Process.Start(link.AbsoluteUri); }
+            catch (Exception ex) { Ui.Error(this, "Impossible d'ouvrir le lien : " + ex.Message); }
+        }
+
+        // ================= Prochains rendez-vous =================
+
+        void SearchUpcoming()
+        {
+            string term;
+            using (var d = new InputDialog("Chercher dans les prochains rendez-vous",
+                "Un mot du titre, du lieu ou de la description. Vous choisirez ensuite la période.", "&Mot à chercher :", Settings.Get("recherche_proche", "")))
+            {
+                if (d.ShowDialog(this) != DialogResult.OK || d.Value.Trim().Length == 0) { days.Focus(); return; }
+                term = d.Value.Trim();
+            }
+            Settings.Set("recherche_proche", term);
+            var periods = new object[] { "Les 7 prochains jours", "Les 30 prochains jours", "Les 3 prochains mois", "L'année à venir" };
+            int[] lengths = { 7, 30, 92, 366 };
+            int choice;
+            using (var d = new ChooseDialog("Période", "&Chercher « " + term + " » dans :", periods, 1))
+            {
+                if (d.ShowDialog(this) != DialogResult.OK) { days.Focus(); return; }
+                choice = Array.IndexOf(periods, d.Selected);
+            }
+            ShowRange(0, lengths[Math.Max(0, choice)], term);
+        }
+
+        /// <summary>Liste d'un seul tenant des rendez-vous d'une période (dans l'agenda affiché, ou tous).</summary>
+        async void ShowRange(int startOffset, int length, string term)
+        {
+            if (!connected || calendarList.Count == 0) { Ui.Error(this, "Aucun agenda chargé. Vérifiez la connexion (menu Fichier) puis F5."); return; }
+            bool all = current == null || current.IsAll;
+            var targets = all ? calendarList.Where(c => c.AccessRole != "freeBusyReader").ToList() : new List<CalendarInfo> { current };
+            DateTime from = startOffset == 0 ? DateTime.Now : DateTime.Today.AddDays(startOffset);
+            DateTime to = DateTime.Today.AddDays(startOffset + length);
+            var hits = new List<SearchHit>();
+            bool ok = await Guard(async () =>
+            {
+                foreach (var cal in targets)
+                {
+                    SetStatus("Lecture de " + cal.Name + "…");
+                    try
+                    {
+                        foreach (var ev in await api.ListEvents(cal.Id, from, to, term))
+                        { ev.Calendar = cal; hits.Add(new SearchHit { Event = ev, Calendar = cal, ShowCalendar = all && !cal.Primary }); }
+                    }
+                    catch (ApiException) when (all) { }
+                }
+            });
+            if (!ok) { days.Focus(); return; }
+            hits = hits.OrderBy(h => h.Event.AllDay ? h.Event.Start.Date : h.Event.Start).ThenBy(h => h.Event.AllDay ? 0 : 1).ToList();
+            string period = startOffset == 1 && length == 1 ? "demain"
+                : length == 7 ? "dans les 7 prochains jours" : length == 30 ? "dans les 30 prochains jours"
+                : length == 92 ? "dans les 3 prochains mois" : "dans l'année à venir";
+            string title = EventText.Count(hits.Count) + " " + period + (term != null ? " pour « " + term + " »" : "");
+            title = char.ToUpper(title[0]) + title.Substring(1);
+            SetStatus(title + ".");
+            SearchHit go = null;
+            using (var f = new SearchResultsForm(title, hits))
+                if (f.ShowDialog(this) == DialogResult.OK) go = f.GoToHit;
+            if (go == null) { days.Focus(); return; }
+            await LoadMonth(go.Event.Start, e => e.Id == go.Event.Id);
             appts.Focus();
         }
 
