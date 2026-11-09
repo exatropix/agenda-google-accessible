@@ -255,7 +255,7 @@ L'agenda reste actif
 - Pour sonner, l'application doit tourner. Elle démarre donc avec Windows, discrètement,
   et se place dans la zone de notification (près de l'horloge, Windows+B pour y aller).
 - Alt+F4 ferme la fenêtre, mais les alarmes restent actives.
-- Ctrl+Alt+A, depuis n'importe quelle application : rouvrir l'agenda.
+- Pour rouvrir l'agenda : son icône près de l'horloge (Windows+B), ou un raccourci choisi dans Préférences.
 - Menu Fichier, « Quitter complètement » (Ctrl+Q) : arrêter l'application. Plus aucune alarme.
 - Menu Alarmes : vous pouvez couper les alarmes, le résumé du matin ou le démarrage avec Windows,
   et tester la sonnerie.
@@ -297,7 +297,7 @@ Ne publiez jamais agenda-identifiants.json ni credentials.json dans le code sour
 - Il faut se reconnecter chaque semaine : l'application est restée en mode Test (étape C.7).
 - Le navigateur ne s'ouvre pas : vérifiez qu'un navigateur par défaut est défini dans Windows.
 - Rien ne se passe après la connexion : revenez à la fenêtre de l'application avec Alt+Tab.
-- Une alarme ne sonne pas : vérifiez que l'application tourne (Ctrl+Alt+A), que le menu Alarmes,
+- Une alarme ne sonne pas : vérifiez que l'application tourne (son icône près de l'horloge, Windows+B), que le menu Alarmes,
   « Activer les alarmes » est coché, et que le rendez-vous a bien une alarme (Entrée pour le détail).
   L'application relit vos agendas toutes les 10 minutes : un rendez-vous ajouté depuis le téléphone
   est pris en compte au plus tard 10 minutes après (F5 pour forcer).
