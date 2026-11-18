@@ -142,6 +142,17 @@ namespace AgendaAccessible
         {
             get { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), "Agenda Google accessible.lnk"); }
         }
+        static string ZoomShortcut
+        {
+            get { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Programs), "Télécommande Zoom accessible.lnk"); }
+        }
+
+        /// <summary>Raccourci du menu Démarrer qui ouvre directement la télécommande Zoom (argument /zoom).</summary>
+        public static void EnsureZoomShortcut()
+        {
+            try { if (IsInstalled && !File.Exists(ZoomShortcut)) CreateShortcut(ZoomShortcut, null, "/zoom", "Télécommande Zoom accessible avec NVDA et JAWS"); } catch { }
+        }
+
         const string UninstallKey = @"Software\Microsoft\Windows\CurrentVersion\Uninstall\AgendaGoogleAccessible";
 
         public static bool IsInstalledCopy
@@ -171,6 +182,7 @@ namespace AgendaAccessible
                 // Un raccourci qui échoue (stratégie de l'entreprise, par exemple) n'empêche pas le reste de l'installation.
                 try { CreateShortcut(StartMenuShortcut, GlobalShortcut.ToLnk(GlobalShortcut.Launch.Value)); } catch { }
                 if (desktopShortcut) try { CreateShortcut(DesktopShortcut, null); } catch { }
+                try { CreateShortcut(ZoomShortcut, null, "/zoom", "Télécommande Zoom accessible avec NVDA et JAWS"); } catch { }
                 using (var k = Microsoft.Win32.Registry.CurrentUser.CreateSubKey(UninstallKey))
                 {
                     k.SetValue("DisplayName", "Agenda Google accessible");
@@ -206,7 +218,7 @@ namespace AgendaAccessible
             catch { }
         }
 
-        static void CreateShortcut(string path, string hotkey)
+        static void CreateShortcut(string path, string hotkey, string arguments = null, string description = null)
         {
             var t = Type.GetTypeFromProgID("WScript.Shell");
             if (t == null) return;
@@ -215,7 +227,8 @@ namespace AgendaAccessible
             var lt = lnk.GetType();
             lt.InvokeMember("TargetPath", BindingFlags.SetProperty, null, lnk, new object[] { InstalledExe });
             lt.InvokeMember("WorkingDirectory", BindingFlags.SetProperty, null, lnk, new object[] { InstallDir });
-            lt.InvokeMember("Description", BindingFlags.SetProperty, null, lnk, new object[] { "Agenda Google accessible avec NVDA et JAWS" });
+            lt.InvokeMember("Description", BindingFlags.SetProperty, null, lnk, new object[] { description ?? "Agenda Google accessible avec NVDA et JAWS" });
+            if (!string.IsNullOrEmpty(arguments)) lt.InvokeMember("Arguments", BindingFlags.SetProperty, null, lnk, new object[] { arguments });
             if (!string.IsNullOrEmpty(hotkey)) try { lt.InvokeMember("Hotkey", BindingFlags.SetProperty, null, lnk, new object[] { hotkey }); } catch { }
             lt.InvokeMember("Save", BindingFlags.InvokeMethod, null, lnk, null);
         }
@@ -225,7 +238,7 @@ namespace AgendaAccessible
         public static void Uninstall(bool removeData)
         {
             try { AutoStart.Enabled = false; } catch { }
-            foreach (var p in new[] { StartMenuShortcut, DesktopShortcut }) try { if (File.Exists(p)) File.Delete(p); } catch { }
+            foreach (var p in new[] { StartMenuShortcut, DesktopShortcut, ZoomShortcut }) try { if (File.Exists(p)) File.Delete(p); } catch { }
             try { Microsoft.Win32.Registry.CurrentUser.DeleteSubKeyTree(UninstallKey, false); } catch { }
             // Le script attend la fin de ce programme (son fichier est verrouillé tant qu'il tourne), puis efface le dossier.
             var sb = new StringBuilder();

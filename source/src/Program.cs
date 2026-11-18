@@ -8,9 +8,9 @@ using System.Windows.Forms;
 [assembly: AssemblyCompany("Exatropic")]
 [assembly: AssemblyProduct("Agenda Google accessible")]
 [assembly: AssemblyCopyright("Luc Rasschaert")]
-[assembly: AssemblyVersion("1.7.5.0")]
+[assembly: AssemblyVersion("1.7.6.0")]
 [assembly: System.Runtime.Versioning.TargetFramework(".NETFramework,Version=v4.6.2", FrameworkDisplayName = ".NET Framework 4.6.2")]
-[assembly: AssemblyFileVersion("1.7.5.0")]
+[assembly: AssemblyFileVersion("1.7.6.0")]
 
 namespace AgendaAccessible
 {
@@ -94,9 +94,10 @@ namespace AgendaAccessible
                     catch (System.Threading.AbandonedMutexException) { created = true; }
                 }
             }
+            bool zoom = has("/zoom");
             if (!created)
             {
-                try { System.Threading.EventWaitHandle.OpenExisting("AgendaGoogleAccessible_Afficher").Set(); } catch { }
+                try { System.Threading.EventWaitHandle.OpenExisting(zoom ? "AgendaGoogleAccessible_Zoom" : "AgendaGoogleAccessible_Afficher").Set(); } catch { }
                 return;
             }
 
@@ -111,13 +112,15 @@ namespace AgendaAccessible
 
             var show = new System.Threading.EventWaitHandle(false, System.Threading.EventResetMode.AutoReset, "AgendaGoogleAccessible_Afficher");
             var quit = new System.Threading.EventWaitHandle(false, System.Threading.EventResetMode.AutoReset, "AgendaGoogleAccessible_Quitter");
-            bool hidden = has("/demarrage");
+            var zoomEvent = new System.Threading.EventWaitHandle(false, System.Threading.EventResetMode.AutoReset, "AgendaGoogleAccessible_Zoom");
+            // Lancé par le raccourci « Télécommande Zoom » : l'agenda reste caché près de l'horloge, seule la télécommande s'ouvre.
+            bool hidden = has("/demarrage") || zoom;
             Application.ThreadException += (s, e) =>
                 MessageBox.Show("Erreur inattendue : " + e.Exception.Message, "Agenda Google accessible", MessageBoxButtons.OK, MessageBoxIcon.Error);
             var form = new MainForm(hidden, has("/apresmiseajour"));
             var waiter = new System.Threading.Thread(() =>
             {
-                var handles = new System.Threading.WaitHandle[] { show, quit };
+                var handles = new System.Threading.WaitHandle[] { show, quit, zoomEvent };
                 while (true)
                 {
                     int i = System.Threading.WaitHandle.WaitAny(handles);
@@ -127,12 +130,14 @@ namespace AgendaAccessible
                         for (int k = 0; k < 150 && !form.IsHandleCreated; k++) System.Threading.Thread.Sleep(200);
                         if (!form.IsHandleCreated) continue;
                         if (i == 0) form.BeginInvoke(new Action(form.ShowMain));
+                        else if (i == 2) form.BeginInvoke(new Action(() => ZoomRemoteForm.ShowFor(null)));
                         else form.BeginInvoke(new Action(form.QuitApp));
                     }
                     catch { }
                 }
             }) { IsBackground = true };
             waiter.Start();
+            if (zoom) zoomEvent.Set();
             Application.Run(form);
             mutex.ReleaseMutex();
             GC.KeepAlive(mutex);

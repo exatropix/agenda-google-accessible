@@ -42,7 +42,7 @@ namespace AgendaAccessible
         readonly NotifyIcon tray;
         readonly bool startHidden;
         bool reallyQuit;
-        const int HotKeyId = 1, HotKeyNext = 2, HotKeyToday = 3, HotKeyZoomMic = 4, HotKeyZoomVideo = 5;
+        const int HotKeyId = 1, HotKeyNext = 2, HotKeyToday = 3, HotKeyZoomMic = 4, HotKeyZoomVideo = 5, HotKeyZoomRemote = 6;
 
         List<CalendarInfo> calendarList = new List<CalendarInfo>();
         CalendarInfo current;
@@ -66,7 +66,7 @@ namespace AgendaAccessible
             auth = new GoogleAuth(http);
             api = new CalendarApi(http, auth);
             soundOn = Settings.Get("son", "1") == "1";
-            monitor = new AlarmMonitor(api, () => calendarList, () => connected, ev => OpenFromAlert(ev));
+            monitor = new AlarmMonitor(api, () => calendarList.Where(c => !CalendarFilter.Hidden(c)).ToList(), () => connected, ev => OpenFromAlert(ev));
             monitor.Enabled = Settings.Get("alarmes", "1") == "1";
             monitor.SummaryEnabled = Settings.Get("resume", "1") == "1";
             monitor.SpeakAlarms = Settings.Get("alarmes_voix", "1") == "1";
@@ -154,9 +154,10 @@ namespace AgendaAccessible
         List<string> RegisterHotkeys()
         {
             var refused = new List<string>();
-            foreach (int id in new[] { HotKeyId, HotKeyNext, HotKeyToday, HotKeyZoomMic, HotKeyZoomVideo }) Native.UnregisterHotKey(Handle, id);
+            foreach (int id in new[] { HotKeyId, HotKeyNext, HotKeyToday, HotKeyZoomMic, HotKeyZoomVideo, HotKeyZoomRemote }) Native.UnregisterHotKey(Handle, id);
             var map = new[] { Tuple.Create(HotKeyId, GlobalShortcut.Open), Tuple.Create(HotKeyNext, GlobalShortcut.Next), Tuple.Create(HotKeyToday, GlobalShortcut.Today),
-                Tuple.Create(HotKeyZoomMic, GlobalShortcut.ZoomMic), Tuple.Create(HotKeyZoomVideo, GlobalShortcut.ZoomVideo) };
+                Tuple.Create(HotKeyZoomMic, GlobalShortcut.ZoomMic), Tuple.Create(HotKeyZoomVideo, GlobalShortcut.ZoomVideo),
+                Tuple.Create(HotKeyZoomRemote, GlobalShortcut.ZoomRemote) };
             foreach (var t in map)
             {
                 uint mods, vk;
@@ -210,6 +211,7 @@ namespace AgendaAccessible
             Native.UnregisterHotKey(Handle, HotKeyToday);
             Native.UnregisterHotKey(Handle, HotKeyZoomMic);
             Native.UnregisterHotKey(Handle, HotKeyZoomVideo);
+            Native.UnregisterHotKey(Handle, HotKeyZoomRemote);
             base.OnHandleDestroyed(e);
         }
 
@@ -220,6 +222,7 @@ namespace AgendaAccessible
             if (m.Msg == 0x0312 && m.WParam.ToInt32() == HotKeyToday) { Speech.Say(monitor.TodaySentence()); return; }
             if (m.Msg == 0x0312 && m.WParam.ToInt32() == HotKeyZoomMic) { Zoom.Toggle(false); return; }
             if (m.Msg == 0x0312 && m.WParam.ToInt32() == HotKeyZoomVideo) { Zoom.Toggle(true); return; }
+            if (m.Msg == 0x0312 && m.WParam.ToInt32() == HotKeyZoomRemote) { ZoomRemoteForm.ShowFor(null); return; }
             base.WndProc(ref m);
         }
 
@@ -307,6 +310,36 @@ namespace AgendaAccessible
                 SetStatus(AutoStart.Enabled ? "L'agenda démarrera avec Windows." : "L'agenda ne démarrera plus avec Windows.");
             }
             catch (Exception ex) { Ui.Error(this, "Impossible de modifier le démarrage automatique : " + ex.Message); }
+        }
+
+        /// <summary>Agendas lus pour « Tous mes agendas » : ceux qu'on peut lire, sauf ceux exclus dans le menu Agenda.</summary>
+        List<CalendarInfo> AllTargets()
+        {
+            return calendarList.Where(c => c.AccessRole != "freeBusyReader" && !CalendarFilter.Hidden(c)).ToList();
+        }
+
+        async void EditIncludedCalendars()
+        {
+            if (calendarList.Count == 0) { Ui.Error(this, "Aucun agenda chargé. Vérifiez la connexion (menu Fichier) puis F5."); return; }
+            using (var f = new IncludedCalendarsForm(calendarList.Where(c => c.AccessRole != "freeBusyReader").ToList()))
+                if (f.ShowDialog(this) != DialogResult.OK) { days.Focus(); return; }
+            SetStatus("Agendas de « Tous mes agendas » enregistrés.");
+            if (current != null && current.IsAll) await LoadMonth(SelectedDay, null);
+            await monitor.RefreshNow();
+            days.Focus();
+        }
+
+        void ChooseRingtone()
+        {
+            using (var f = new RingtoneForm())
+            {
+                if (f.ShowDialog(this) == DialogResult.OK)
+                {
+                    Ring.Choice = f.Selected;
+                    SetStatus("Sonnerie : " + Ring.ChoiceName(f.Selected) + ".");
+                }
+            }
+            days.Focus();
         }
 
         void TestRing()
@@ -570,6 +603,7 @@ namespace AgendaAccessible
                 (nextItem = Item("&Dire le prochain rendez-vous", Keys.None, GlobalShortcut.Next.MenuText, () => Speech.Say(monitor.NextEventSentence()))),
                 (todayItem = Item("Dire les rendez-vous d'a&ujourd'hui", Keys.None, GlobalShortcut.Today.MenuText, () => Speech.Say(monitor.TodaySentence()))),
                 new ToolStripSeparator(),
+                Item("Choisir la &sonnerie…", Keys.None, null, () => ChooseRingtone()),
                 Item("&Tester la sonnerie", Keys.None, null, () => TestRing())));
 
             ms.Items.Add(MenuOf("&Préférences",
@@ -578,6 +612,7 @@ namespace AgendaAccessible
 
             ms.Items.Add(MenuOf("A&genda",
                 Item("&Choisir l'agenda…", Keys.Control | Keys.G, null, () => ChooseCalendar()),
+                Item("Agendas i&nclus dans « Tous mes agendas »…", Keys.None, null, () => EditIncludedCalendars()),
                 new ToolStripSeparator(),
                 Item("&Partager cet agenda…", Keys.None, null, () => ShareCalendar()),
                 Item("S'&abonner à un agenda partagé avec moi…", Keys.None, null, () => AddSharedCalendar()),
@@ -697,7 +732,7 @@ namespace AgendaAccessible
         void AfterStartup()
         {
             AutoStart.Refresh();
-            if (Installer.IsInstalledCopy) Installer.RefreshVersionInfo();
+            if (Installer.IsInstalledCopy) { Installer.RefreshVersionInfo(); Installer.EnsureZoomShortcut(); }
             if (afterUpdate)
             {
                 string msg = "Mise à jour installée : version " + AppInfo.VersionText + ".";
@@ -1017,7 +1052,7 @@ namespace AgendaAccessible
                 await Guard(async () =>
                 {
                     SetStatus("Chargement de " + first.ToString("MMMM yyyy", EventInfo.Fr) + "…");
-                    var targets = cal.IsAll ? calendarList.Where(c => c.AccessRole != "freeBusyReader").ToList() : new List<CalendarInfo> { cal };
+                    var targets = cal.IsAll ? AllTargets() : new List<CalendarInfo> { cal };
                     var list = new List<EventInfo>();
                     foreach (var c in targets)
                     {
@@ -1448,7 +1483,7 @@ namespace AgendaAccessible
         {
             if (!connected || calendarList.Count == 0) { Ui.Error(this, "Aucun agenda chargé. Vérifiez la connexion (menu Fichier) puis F5."); return; }
             bool all = current == null || current.IsAll;
-            var targets = all ? calendarList.Where(c => c.AccessRole != "freeBusyReader").ToList() : new List<CalendarInfo> { current };
+            var targets = all ? AllTargets() : new List<CalendarInfo> { current };
             DateTime from = startOffset == 0 ? DateTime.Now : DateTime.Today.AddDays(startOffset);
             DateTime to = DateTime.Today.AddDays(startOffset + length);
             var hits = new List<SearchHit>();
@@ -1496,7 +1531,7 @@ namespace AgendaAccessible
                 term = d.Value;
             }
             Settings.Set("recherche", term);
-            var targets = allCalendars ? calendarList.Where(c => c.AccessRole != "freeBusyReader").ToList() : new List<CalendarInfo> { current };
+            var targets = allCalendars ? AllTargets() : new List<CalendarInfo> { current };
             var hits = new List<SearchHit>();
             var skipped = new List<string>();
             bool ok = await Guard(async () =>

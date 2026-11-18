@@ -96,18 +96,86 @@ namespace AgendaAccessible
             return p;
         }
 
-        /// <summary>Sonnerie d'alarme, jouée en boucle.</summary>
-        public static void StartAlarm()
+        [System.Runtime.InteropServices.DllImport("winmm.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+        static extern int mciSendString(string command, StringBuilder ret, int size, IntPtr hwnd);
+
+        /// <summary>Sonneries proposées : nom affiché, code enregistré, sons (fréquence Hz, durée ms).</summary>
+        public static readonly Tuple<string, string, double[]>[] Presets =
         {
+            Tuple.Create("Classique", "classique", new double[] { 988, 140, 0, 70, 988, 140, 0, 70, 1319, 260, 0, 1100 }),
+            Tuple.Create("Carillon", "carillon", new double[] { 659, 220, 784, 220, 1047, 450, 0, 1300 }),
+            Tuple.Create("Douce", "douce", new double[] { 523, 380, 659, 380, 784, 650, 0, 1600 }),
+            Tuple.Create("Réveil", "reveil", new double[] { 880, 90, 0, 60, 880, 90, 0, 60, 880, 90, 0, 60, 880, 90, 0, 900 }),
+            Tuple.Create("Cloches", "cloches", new double[] { 1047, 160, 1319, 160, 1568, 160, 2093, 420, 0, 1100 }),
+            Tuple.Create("Grave", "grave", new double[] { 392, 320, 0, 160, 392, 320, 0, 1300 }),
+        };
+
+        public const string FilePrefix = "fichier:";
+
+        /// <summary>Sonnerie choisie (menu Alarmes, « Choisir la sonnerie »).</summary>
+        public static string Choice
+        {
+            get { return Settings.Get("sonnerie", "classique"); }
+            set { Settings.Set("sonnerie", value); }
+        }
+
+        public static string ChoiceName(string choice)
+        {
+            if (choice.StartsWith(FilePrefix)) return "Fichier : " + Path.GetFileNameWithoutExtension(choice.Substring(FilePrefix.Length));
+            var p = Presets.FirstOrDefault(x => x.Item2 == choice);
+            return p != null ? p.Item1 : "Classique";
+        }
+
+        static bool mciOpen;
+        static string ringChoice;
+
+        /// <summary>Sonnerie d'alarme, jouée en boucle.</summary>
+        public static void StartAlarm() { StartAlarm(Choice); }
+
+        public static void StartAlarm(string choice)
+        {
+            Stop();
             try
             {
-                if (ring == null) ring = Make(988, 140, 0, 70, 988, 140, 0, 70, 1319, 260, 0, 1100);
+                if (choice.StartsWith(FilePrefix))
+                {
+                    string path = choice.Substring(FilePrefix.Length);
+                    if (File.Exists(path))
+                    {
+                        if (path.EndsWith(".wav", StringComparison.OrdinalIgnoreCase))
+                        {
+                            ring = new SoundPlayer(path); ring.Load(); ringChoice = null;
+                            ring.PlayLooping();
+                            return;
+                        }
+                        if (mciSendString("open \"" + path + "\" type mpegvideo alias agendasonnerie", null, 0, IntPtr.Zero) == 0)
+                        {
+                            mciOpen = true;
+                            if (mciSendString("play agendasonnerie repeat", null, 0, IntPtr.Zero) == 0) return;
+                            Stop();
+                        }
+                    }
+                    choice = "classique"; // fichier introuvable ou illisible : sonnerie classique
+                }
+                if (ring == null || ringChoice != choice)
+                {
+                    var p = Presets.FirstOrDefault(x => x.Item2 == choice) ?? Presets[0];
+                    ring = Make(p.Item3); ringChoice = choice;
+                }
                 ring.PlayLooping();
             }
             catch { }
         }
 
-        public static void Stop() { try { if (ring != null) ring.Stop(); } catch { } }
+        public static void Stop()
+        {
+            try { if (ring != null) ring.Stop(); } catch { }
+            if (mciOpen)
+            {
+                try { mciSendString("stop agendasonnerie", null, 0, IntPtr.Zero); mciSendString("close agendasonnerie", null, 0, IntPtr.Zero); } catch { }
+                mciOpen = false;
+            }
+        }
 
         /// <summary>Petit carillon pour le résumé du matin.</summary>
         public static void Chime()

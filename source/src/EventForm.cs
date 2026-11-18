@@ -190,7 +190,42 @@ namespace AgendaAccessible
             Controls.Add(table);
             Controls.Add(buttons);
             UpdateTimeFields();
-            Shown += (s, e) => title.Focus();
+            Shown += (s, e) => { snapshot = State(); title.Focus(); };
+            prefilled = isNew && prefill != null;
+            FormClosing += OnClosingCheck;
+        }
+
+        string snapshot;
+        readonly bool prefilled;
+        bool asking;
+
+        /// <summary>Tout ce que l'utilisateur peut changer, pour savoir si la fiche a été modifiée.</summary>
+        string State()
+        {
+            var parts = new List<string>();
+            foreach (var tb in new[] { title, startDate, startTime, endDate, endTime, location, description, guests, repeatUntil }) parts.Add(tb == null ? "" : tb.Text);
+            foreach (var cb in new[] { allDay, alarmDefault }) parts.Add(cb.Checked ? "1" : "0");
+            foreach (var cb in alarmBoxes) parts.Add(cb.Checked ? "1" : "0");
+            parts.Add(calendarBox == null ? "" : calendarBox.SelectedIndex.ToString());
+            parts.Add(repeatBox == null ? "" : repeatBox.SelectedIndex.ToString());
+            return string.Join("\u0001", parts);
+        }
+
+        /// <summary>Fermer une fiche non enregistrée (Échap, Alt+F4, Annuler) demande d'abord confirmation,
+        /// surtout après une saisie rapide, où la fiche n'est pas encore enregistrée.</summary>
+        void OnClosingCheck(object sender, FormClosingEventArgs e)
+        {
+            if (readOnly || asking || DialogResult == DialogResult.OK || snapshot == null) return;
+            if (e.CloseReason == CloseReason.WindowsShutDown || e.CloseReason == CloseReason.TaskManagerClosing) return;
+            if (!prefilled && State() == snapshot) return;
+            asking = true;
+            var answer = MessageBox.Show(this, "Ce rendez-vous n'est pas encore enregistré dans votre agenda.\r\n\r\nL'enregistrer maintenant ?",
+                "Rendez-vous non enregistré", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button1);
+            asking = false;
+            if (answer == DialogResult.No) return;
+            e.Cancel = true;
+            DialogResult = DialogResult.None;
+            if (answer == DialogResult.Yes) BeginInvoke(new Action(Save));
         }
 
         CheckBox AddCheck(TableLayoutPanel table, string text, ref int tab)

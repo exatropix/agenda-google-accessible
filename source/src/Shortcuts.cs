@@ -26,7 +26,9 @@ namespace AgendaAccessible
         public static readonly GlobalShortcut ZoomMic = new GlobalShortcut { SettingKey = "rac_zoom_micro", Label = "Zoom : couper ou rétablir le micro", Explanation = "Pendant une réunion Zoom, coupe ou rétablit le micro depuis n'importe où et annonce l'état." };
         public static readonly GlobalShortcut ZoomVideo = new GlobalShortcut { SettingKey = "rac_zoom_camera", Label = "Zoom : couper ou rétablir la caméra", Explanation = "Pendant une réunion Zoom, coupe ou rétablit la caméra depuis n'importe où et annonce l'état." };
 
-        public static readonly GlobalShortcut[] All = { Open, Next, Today, Launch, ZoomMic, ZoomVideo };
+        public static readonly GlobalShortcut ZoomRemote = new GlobalShortcut { SettingKey = "rac_zoom_telecommande", Label = "Ouvrir la télécommande Zoom", Explanation = "Fait apparaître la télécommande Zoom depuis n'importe où, pour rejoindre une réunion ou la piloter." };
+
+        public static readonly GlobalShortcut[] All = { Open, Next, Today, Launch, ZoomRemote, ZoomMic, ZoomVideo };
 
         public static readonly string[] Modifiers = { "Ctrl+Alt", "Ctrl+Maj", "Ctrl+Alt+Maj", "Alt+Maj", "Windows+Maj" };
         public static readonly string[] LauncherModifiers = { "Ctrl+Alt", "Ctrl+Maj", "Ctrl+Alt+Maj" };

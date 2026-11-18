@@ -215,7 +215,7 @@ Dans Zoom, Paramètres, Raccourcis clavier, on peut aussi rendre Alt+A et Alt+V 
             if (instance == null || instance.IsDisposed) instance = new ZoomRemoteForm();
             instance.Text = "Télécommande Zoom" + (string.IsNullOrEmpty(title) ? "" : " : " + title);
             instance.Show();
-            instance.Activate();
+            Native.ForceForeground(instance);
         }
 
         ZoomRemoteForm()
@@ -229,8 +229,9 @@ Dans Zoom, Paramètres, Raccourcis clavier, on peut aussi rendre Alt+A et Alt+V 
             KeyPreview = true;
 
             var panel = new FlowLayoutPanel { FlowDirection = FlowDirection.TopDown, AutoSize = true, Padding = new Padding(10), Dock = DockStyle.Fill };
-            status = new Label { AutoSize = true, MaximumSize = new Size(420, 0), Text = "Zoom s'ouvre. Revenez ici avec Alt+Tab quand la réunion a commencé." };
+            status = new Label { AutoSize = true, MaximumSize = new Size(420, 0), Text = "Pendant une réunion Zoom, ces boutons pilotent Zoom. Revenez ici avec Alt+Tab." };
             panel.Controls.Add(status);
+            panel.Controls.Add(Ui.MakeButton("&Rejoindre une réunion (lien ou numéro)…", (s, e) => JoinMeeting()));
             panel.Controls.Add(Ui.MakeButton("&Micro : couper ou rétablir", (s, e) => Zoom.Toggle(false)));
             panel.Controls.Add(Ui.MakeButton("&Caméra : couper ou rétablir", (s, e) => Zoom.Toggle(true)));
             panel.Controls.Add(Ui.MakeButton("Lever ou baisser la &main", (s, e) => Do("%y", "Main levée ou baissée.")));
@@ -242,6 +243,29 @@ Dans Zoom, Paramètres, Raccourcis clavier, on peut aussi rendre Alt+A et Alt+V 
             panel.Controls.Add(close);
             CancelButton = close;
             Controls.Add(panel);
+        }
+
+        void JoinMeeting()
+        {
+            string text;
+            using (var d = new InputDialog("Rejoindre une réunion Zoom",
+                "Collez le lien de la réunion (Ctrl+V) ou tapez son numéro (ID de réunion). Zoom demandera le code secret s'il en faut un.",
+                "&Lien ou numéro :", ""))
+            {
+                if (d.ShowDialog(this) != DialogResult.OK) return;
+                text = d.Value.Trim();
+            }
+            if (text.Length == 0) return;
+            string digits = new string(text.Where(char.IsDigit).ToArray());
+            try
+            {
+                if (Zoom.IsZoomLink(text)) { if (!Zoom.Open(text)) Ui.Info(this, "L'application Zoom n'est pas installée : la réunion s'ouvre dans le navigateur, sans la télécommande."); }
+                else if (text.All(c => char.IsDigit(c) || c == ' ' || c == '-') && digits.Length >= 9 && digits.Length <= 12)
+                    System.Diagnostics.Process.Start("zoommtg://zoom.us/join?action=join&confno=" + digits);
+                else { Ui.Error(this, "Ce n'est ni un lien Zoom ni un numéro de réunion (9 à 12 chiffres)."); return; }
+                Speech.Say("Zoom s'ouvre. Revenez à la télécommande avec Alt+Tab.");
+            }
+            catch (Exception ex) { Ui.Error(this, "Impossible d'ouvrir Zoom (est-il installé ?) : " + ex.Message); }
         }
 
         void Do(string keys, string done)
