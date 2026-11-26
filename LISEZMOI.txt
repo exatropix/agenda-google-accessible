@@ -1,4 +1,4 @@
-﻿AGENDA GOOGLE ACCESSIBLE - Version 1.7.6
+﻿AGENDA GOOGLE ACCESSIBLE - Version 1.7.7
 Par Luc Rasschaert (Exatropic)
 
 Application Windows pour gérer votre agenda Google au clavier, avec NVDA ou JAWS :
@@ -8,6 +8,17 @@ Application Windows pour gérer votre agenda Google au clavier, avec NVDA ou JAW
 - voir qui a accès à un agenda et retirer un accès ;
 - ajouter à votre liste un agenda qu'une autre personne vous a partagé ;
 - créer un nouvel agenda (par exemple un agenda familial à partager).
+
+
+NOUVEAU EN VERSION 1.7.7
+
+- Télécommande Zoom, « Enregistrer la réunion : démarrer ou arrêter » : enregistre la réunion sur l'ordinateur,
+  après confirmation. L'agenda annonce « Enregistrement démarré » ou « Enregistrement arrêté ».
+  Il faut être l'organisateur de la réunion ou avoir reçu son autorisation ; Zoom prévient les participants.
+- « Mettre en pause ou reprendre l'enregistrement », avec annonce de l'état.
+- « Ouvrir le dossier des enregistrements » : le dossier Zoom de vos Documents, où le fichier est créé
+  à la fin de la réunion.
+- Le bouton d'état annonce aussi si un enregistrement est en cours, en pause ou absent.
 
 
 NOUVEAU EN VERSION 1.7.6
