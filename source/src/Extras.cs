@@ -433,7 +433,7 @@ Ctrl+Flèche bas ou haut d'une heure ; Ctrl+Z annule le dernier déplacement.
 Invitations reçues : Ctrl+Maj+A accepter, Ctrl+Maj+P peut-être, Ctrl+Maj+R refuser.
 Ctrl+Maj+V : rejoindre la visioconférence (Google Meet, Zoom, Teams).
 Pour Zoom, l'agenda propose d'ouvrir la réunion avec sa télécommande (micro, caméra, main levée, état
-du micro annoncé, quitter) ou dans Zoom seulement. Télécommande aussi dans le menu Rendez-vous,
+du micro annoncé, enregistrement de la réunion, quitter) ou dans Zoom seulement. Télécommande aussi dans le menu Rendez-vous,
 dans le menu Démarrer (« Télécommande Zoom accessible ») et par un raccourci global au choix :
 elle permet aussi de rejoindre une réunion sans rendez-vous, avec son lien ou son numéro.
 Deux raccourcis globaux, à choisir dans Préférences, coupent ou rétablissent le micro et la caméra de Zoom
@@ -497,7 +497,7 @@ Le guide complet, avec la préparation de l'accès Google, est dans le fichier L
 
         /// <summary>Guide court fourni avec une version distribuée (sans les étapes Google Cloud).</summary>
         public const string UserGuide =
-@"AGENDA GOOGLE ACCESSIBLE - Version 1.7.6
+@"AGENDA GOOGLE ACCESSIBLE - Version 1.7.7
 Par Luc Rasschaert (Exatropic)
 
 Gérez votre agenda Google au clavier, avec NVDA ou JAWS : rendez-vous, alarmes,
